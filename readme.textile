@@ -1,1 +1,14 @@
-Adobe Connect
+h1. Adobe Connect Datasource+Models Plugin for CakePHP
+
+This CakePHP Plugin uses the "Adobe Connect API":http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/ 
+as a Datasouce and packages access to it's parts as isolated Models.
+
+* *AdobeConnectPrincipal* - access to all Principals: users & groups
+* *AdobeConnectSco* - access to all SCO items: meetings, content, folders, etc.
+* *AdobeConnectReport* - access to all Reporting functions: meetings, content, folders, etc.
+
+The API interaction and standard "heavy-lifting" is done in the Datasource, but the Models tie the peices together and facilitate access through normal commands and syntax.
+
+See the unit tests for more information on how to use.
+
+WIP
