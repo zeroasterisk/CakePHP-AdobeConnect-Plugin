@@ -129,6 +129,7 @@ class AdobeConnectSource extends DataSource {
 		'swf' => 'A SWF file.',
 		);
 	
+	
 	/**
 	* constants from Connect
 	* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS8d7bb3e8da6fb92f73b3823d121e63182fe-8000.html#WS5b3ccc516d4fbf351e63e3d11a171ddf77-7f9c
@@ -331,7 +332,7 @@ class AdobeConnectSource extends DataSource {
 			$requestOptions = set::merge($model->requestOptions);
 		}
 		$data = set::merge(array(
-			'method' => (count($data) > 4 ? 'post' : 'get'),
+			'method' => (count($data) > 6 ? 'post' : 'get'),
 			'action' => 'unknown',
 			), $data);
 		extract($data);
@@ -448,8 +449,13 @@ class AdobeConnectSource extends DataSource {
 	* @param array $data
 	*/
 	public function log($data) {
-		$data['microtimestamp'] = getMicrotime(); 
-		$data['sent'] = (isset($data['dataAsXML']) && !empty($data['dataAsXML']) ? $data['dataAsXML'] : json_encode($data['dataCleaned']));
+		$data['microtimestamp'] = getMicrotime();
+		if (isset($data['dataAsXML']) && !empty($data['dataAsXML'])) {
+			$data['sent'] = $data['dataAsXML'];
+			$data['sent_raw'] = json_encode($data['dataCleaned']);
+		} else {
+			$data['sent'] = json_encode($data['dataCleaned']);
+		}
     	$data['received'] = (isset($data['responseArray']) && !empty($data['responseArray']) ? json_encode($data['responseArray']) : $data['response']);
     	$data['received_raw'] = $data['response'];
     	$data['data'] = json_encode($data['data']);

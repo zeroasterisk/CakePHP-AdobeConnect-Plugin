@@ -107,6 +107,7 @@ class AdobeConnectAppModel extends AppModel {
 	public function find($type, $options = array()) {
 		$initial = $this->request;
 		$this->request = array();
+		$options = set::merge(array('order' => null, 'recursive' => null, 'conditions' => null, 'fields' => null,), $options); 
 		$return = parent::find($type, $options);
 		$this->request = $initial;
 		return $return;
@@ -133,6 +134,7 @@ class AdobeConnectAppModel extends AppModel {
 	* @return array
 	*/
 	protected function _paginationParams($query) {
+		/*
 		if (!empty($query['limit'])) {
 			$this->request['uri']['query']['max-results'] = $query['limit'];
 		} else {
@@ -143,6 +145,7 @@ class AdobeConnectAppModel extends AppModel {
 		} else {
 			$this->request['uri']['query']['start-index'] = $query['page'] = 1;
 		}
+		*/
 		return $query;
 	}
 	
@@ -180,6 +183,94 @@ class AdobeConnectAppModel extends AppModel {
 		return $this->_results;
 	}
 	
+	/**
+	* In many cases we need to translate CakePHP $query/$findOptions to AdobeConnect Filters
+	* @param array $query
+	* @return array $request ($this->request = set::merge($this->request, $this->parseFiltersFromQuery($query)))
+	*/
+	public function parseFiltersFromQuery($query) {
+		$request = array();
+		if (isset($query['recursive'])) {
+			$request["filter-depth"] = $query['recursive'];
+			if (empty($request['filter-depth'])) {
+				unset($request['filter-depth']);
+			}
+		}
+		if (isset($query['limit'])) {
+			$request["filter-rows"] = $query['limit'];
+		} else {
+			$request["filter-rows"] = 200;
+		}
+		if (isset($query['page'])) {
+			$request["filter-start"] = (($query['page'] -1) * $request["filter-rows"]) + 1;
+		}
+		if (isset($query['order'])) {
+			if (is_string($query['order']) && strpos($query['order'], ',')) {
+				$query['order'] = explode(',', $query['order']);
+			}
+			if (is_array($query['order'])) {
+				foreach ( $query['order'] as $field_dir ) {
+					$field_dir = strtolower(trim($field_dir));
+					$dir = (substr($field_dir, -4) == 'desc' ? 'desc' : 'asc');
+					$field_dir_parts = explode(' ', $field_dir);
+					$field = array_shift($field_dir_parts);
+					$field_parts = explode('.', $field);
+					$field = array_pop($field_parts);
+					$request["sort-{$field}"] = $dir;
+				}
+			} else {
+				$field_dir = strtolower(trim($query['order']));
+				$dir = (strtolower(substr($field_dir, -4)) == 'desc' ? 'desc' : 'asc');
+				$field_dir_parts = explode(' ', $field_dir);
+				$field = array_shift($field_dir_parts);
+				$field_parts = explode('.', $field);
+				$field = array_pop($field_parts);
+				$request["sort-{$field}"] = $dir;
+			}
+		}
+		if (!empty($query['conditions'])) {
+			foreach ( $query['conditions'] as $key => $val ) {
+				if (strpos($key, '.')!==false) {
+					$keyParts = explode('.', $key);
+					$key = array_pop($keyParts);
+				}
+				if ($key == 'id') {
+					$key = $this->primaryKey;
+				}
+				$val = $this->escapeString(trim(str_replace('*', '%', $val)));
+				if (substr($key, -1)=='>') {
+					$key = trim(substr($key, 0, strlen($key)-1));
+					$request["filter-gt-{$key}"] = $val;
+				} elseif (substr($key, -1)=='<') {
+					$key = trim(substr($key, 0, strlen($key)-1));
+					$request["filter-lt-{$key}"] = $val;
+				} elseif (substr($key, -2)=='>=') {
+					$key = trim(substr($key, 0, strlen($key)-2));
+					$request["filter-gte-{$key}"] = $val;
+				} elseif (substr($key, -2)=='<=') {
+					$key = trim(substr($key, 0, strlen($key)-2));
+					$request["filter-lte-{$key}"] = $val;
+				} elseif (strtolower(substr($key, -3))=='not') {
+					$key = trim(substr($key, 0, strlen($key)-3));
+					$request["filter-out-{$key}"] = $val;
+				} elseif (strtolower(substr($key, -4))=='like') {
+					$key = trim(substr($key, 0, strlen($key)-4));
+					$request["filter-like-{$key}"] = $val;
+				} elseif (strpos($val, '%')!==false) {
+					$request["filter-like-{$key}"] = $val;
+				} else {
+					$request["filter-{$key}"] = $val;
+				}
+			}
+		}
+		return $request;
+	}
+	function escapeString($string) {
+		return str_replace(
+			array('+', '-', '&&', '||', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', '*', '?', ':', '\\'),
+			array('\\+', '\\-', '\\&&', '\\||', '\\!', '\\(', '\\)', '\\{', '\\}', '\\[', '\\]', '\\^', '\\"', '\\~', '%', '\\?', '\\:', '\\\\'),
+			trim($string));
+	}
 }
 
 ?>

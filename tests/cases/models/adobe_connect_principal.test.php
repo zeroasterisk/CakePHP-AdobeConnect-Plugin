@@ -97,21 +97,26 @@ class AdobeConnectPrincipalTestCase extends CakeTestCase {
 			$this->assertTrue(count($found)==1);
 			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
 			
+			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => substr($Principal[$key], 0, 20))));
+			$this->assertTrue(count($found)==0);
+			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => substr($Principal[$key], 0, 20).'*')));
+			$this->assertTrue(count($found)==1);
+			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
+			// auto-like with asterisk
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => substr($Principal[$key], 0, 20).'*')));
 			$this->assertTrue(count($found)==1);
 			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
-			
 			// and look, it wildecards the beginning and ending automatically
-			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => substr($Principal[$key], 0, 20))));
+			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => substr($Principal[$key], 0, 20))));
 			$this->assertTrue(count($found)==1);
 			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
-			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => substr($Principal[$key], 2, 18))));
+			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => substr($Principal[$key], 2, 18))));
 			$this->assertTrue(count($found)==1);
 			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
 			
-			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => 'x'.$Principal[$key])));
+			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => 'x'.substr($Principal[$key], 2, 18))));
 			$this->assertTrue(count($found)==0);
-			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => $Principal[$key].'x')));
+			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => substr($Principal[$key], 2, 18).'x')));
 			$this->assertTrue(count($found)==0);
 		}
 		

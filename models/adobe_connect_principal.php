@@ -20,16 +20,16 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	public $name ='AdobeConnectPrincipal';
 	
 	/**
-	* Tell the model that we don't use a table
-	* @var name
-	*/
-	public $useTable = false;
-	
-	/**
 	* The datasource this model uses
-	* @var name
+	* @var string
 	*/
 	public $useDbConfig = 'adobeConnect';
+	
+	/**
+	* default value of "send-email" for the welcome email on new-user-create
+	* @var bool
+	*/
+	public $defaultSendEmailBool = false;
 	
 	/**
 	* The fields and their types for the form helper
@@ -78,6 +78,9 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	
 	/**
 	* Creates/Saves a Principal
+	*
+	* // TODO: implement custom field updating too: http://help.adobe.com/en_US/connect/8.0/webservices/WS5b3ccc516d4fbf351e63e3d11a171dd0f3-7fe8_SP1.html
+	*
 	* @param array $data See Model::save()
 	* @param boolean $validate See Model::save() false
 	* @param array $fieldList See Model::save()
@@ -117,6 +120,10 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		if (!isset($data['has-children'])) {
 			$data['has-children'] = (strpos($data['type'], "group")!==false);
 		}
+		if (!isset($data['send-email']) && $data['type'] == 'user') {
+			$data['send-email'] = $this->defaultSendEmailBool;
+		}
+		
 		if ($data['type'] == 'user') {
 			$data['has-children'] = false;
 			$requiredKeys = array('last-name', 'first-name', 'name', 'login', 'email');
@@ -173,6 +180,10 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	* @return array
 	*/
 	public function read($fields = null, $id = true) {
+		if (empty($id) || !is_numeric($id)) {
+			$this->errors[] = "Error: Read: invalid ID";
+			return false;
+		}
 		return $this->find('info', $id);
 	}
 	
@@ -203,27 +214,6 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		echo dumpthis($this->response);
 		return false;
 		
-	}
-	
-	
-	/**
-	* A jankity overwrite of the _findCount method
-	* Needed to clean saves
-	*
-	* @param mixed $conditions
-	* @param mixed $fields
-	* @param mixed $order
-	* @param integer $limit
-	* @param integer $page
-	* @param integer $recursive
-	* @param array $extra
-	* @return array The results of the call to the web service
-	*/
-	public function _findCount($state, $query = array(), $results = array()) {
-		$initial = $this->request;
-		$return = $this->_findInfo($state, $query, $results);
-		$this->request = $initial;
-		return $return;
 	}
 	
 	/**
@@ -331,18 +321,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	protected function _findSearch($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
 			$this->request["action"] = "principal-list";
-			if (!empty($query['conditions'])) {
-				foreach ( $query['conditions'] as $key => $val ) {
-					if (strpos($key, '.')!==false) {
-						$keyParts = explode('.', $key);
-						$key = array_pop($keyParts);
-					}
-					if ($key == 'id') {
-						$key = $this->primaryKey;
-					}
-					$this->request["filter-like-{$key}"] = str_replace('*', '%', $val);
-				}
-			}
+			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
 			$query = $this->_paginationParams($query);
 			return $query;
 		} else {
@@ -353,6 +332,27 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 			}
 			return $results;
 		}
+	}
+	
+	
+	/**
+	* A jankity overwrite of the _findCount method
+	* Needed to clean saves
+	*
+	* @param mixed $conditions
+	* @param mixed $fields
+	* @param mixed $order
+	* @param integer $limit
+	* @param integer $page
+	* @param integer $recursive
+	* @param array $extra
+	* @return array The results of the call to the web service
+	*/
+	public function _findCount($state, $query = array(), $results = array()) {
+		$initial = $this->request;
+		$return = $this->_findInfo($state, $query, $results);
+		$this->request = $initial;
+		return $return;
 	}
 	
 }
