@@ -239,7 +239,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	*/
 	protected function _findInfo($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
-			$this->request["action"] = "sco-info";
+			$this->request = array("action" => "sco-info");
 			$id = 0;
 			if (isset($query[0]) && !empty($query[0])) {
 				$id = $query[0];
@@ -293,7 +293,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	*/
 	protected function _findSearch($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
-			$this->request["action"] = "sco-search-by-field";
+			$this->request = array("action" => "sco-search-by-field");
 			if (isset($query[0]) && !empty($query[0])) {
 				$this->request['field'] = 'name';
 				$this->request['query'] = $query[0];
@@ -342,7 +342,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	*/
 	protected function _findContents($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
-			$this->request["action"] = "sco-expanded-contents";
+			$this->request = array("action" => "sco-expanded-contents");
 			if (isset($query['sco-id']) && !empty($query['sco-id']) && is_numeric($query['sco-id'])) {
 				$this->request["sco-id"] = $query['sco-id'];
 				unset($query['sco-id']);
@@ -384,7 +384,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	*/
 	protected function _findSearchcontent($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
-			$this->request["action"] = "sco-search";
+			$this->request = array("action" => "sco-search");
 			if (isset($query['query']) && !empty($query['query']) && is_string($query['query'])) {
 				$this->request["query"] = $this->escapeString($query['query']);
 			} elseif (isset($query['conditions']['query']) && !empty($query['conditions']['query']) && is_string($query['conditions']['query'])) {
