@@ -12,25 +12,25 @@
 * @license MIT License - http://www.opensource.org/licenses/mit-license.php
 */
 class AdobeConnectPrincipal extends AdobeConnectAppModel {
-	
+
 	/**
 	* The name of this model
 	* @var name
 	*/
 	public $name ='AdobeConnectPrincipal';
-	
+
 	/**
 	* The datasource this model uses
 	* @var string
 	*/
 	public $useDbConfig = 'adobeConnect';
-	
+
 	/**
 	* default value of "send-email" for the welcome email on new-user-create
 	* @var bool
 	*/
 	public $defaultSendEmailBool = false;
-	
+
 	/**
 	* The fields and their types for the form helper
 	* @var array
@@ -58,14 +58,14 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		'lang' => array('type' => 'string', 'length' => '255'),
 		'time-zone-id' => array('type' => 'string', 'length' => '255'),
 		);
-	
-	
+
+
 	/**
 	* Set the primaryKey
 	* @var string
 	*/
 	public $primaryKey = 'principal-id';
-	
+
 	/**
 	* The custom find methods (defined below)
 	* @var array
@@ -74,8 +74,8 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		'search' => true,
 		'info' => true,
 		);
-	
-	
+
+
 	/**
 	* Creates/Saves a Principal
 	*
@@ -87,6 +87,8 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	* @return boolean
 	*/
 	public function save($data = null, $validate = false, $fieldList = array()) {
+		$initial = $this->request;
+		$this->request = array();
 		if (isset($data[$this->alias])) {
 			// strip down to just this model's data
 			$data = $data[$this->alias];
@@ -112,7 +114,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 				unset($data[$this->primaryKey]);
 			}
 		}
-			
+
 		$principalAllowedTypes = array('admins', 'authors', 'course-admins', 'event-admins', 'event-group', 'everyone', 'external-group', 'external-user', 'group', 'guest', 'learners', 'live-admins', 'seminar-admins', 'user', );
 		if (!isset($data['type']) || !in_array($data['type'], $principalAllowedTypes)) {
 			$data['type'] = 'user';
@@ -123,13 +125,15 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		if (!isset($data['send-email']) && $data['type'] == 'user') {
 			$data['send-email'] = $this->defaultSendEmailBool;
 		}
-		
+
 		if ($data['type'] == 'user') {
 			$data['has-children'] = false;
 			$requiredKeys = array('last-name', 'first-name', 'name', 'login', 'email');
 			$missingFields = array_diff_key(array_flip($requiredKeys), $data);
 			if (!empty($missingFields)) {
-				$this->errors[] = "ERROR {$this->alias} ".__function__." missing required field: ".implode(', ',array_keys($missingFields));
+				$this->errors[] = $error = "{$this->alias}::Save: missing required field: ".implode(', ',array_keys($missingFields));
+				trigger_error(__d('adobe_connect', $error, true), E_USER_WARNING);
+				$this->request = $initial;
 				return false;
 			}
 		}
@@ -142,14 +146,16 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 			$this->response[$this->alias][$this->primaryKey] = $this->id;
 			$result[$this->alias][$this->primaryKey] = $this->id;
 		} else {
+			$this->request = $initial;
 			return false;
 		}
 		if ($result) {
 			$this->setInsertID($this->response[$this->alias][$this->primaryKey]);
 		}
+		$this->request = $initial;
 		return $result;
 	}
-	
+
 	/**
 	* Ovverwrite of the exists() function, to facilitate saves
 	* (assume this is called within the save() function, so existance has already been established)
@@ -162,16 +168,17 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 			return true;
 		}
 		if (isset($this->id) && !empty($this->id)) {
-			echo dumpthis($this->request);
+			$initial = $this->request;
+			$this->request = array();
 			$read = $this->read(null, $this->id);
-			echo dumpthis($this->request);
+			$this->request = $initial;
 			if (isset($read[$this->alias][$this->primaryKey]) && !empty($read[$this->alias][$this->primaryKey])) {
 				return true;
 			}
 		}
 		return false;
 	}
-	
+
 	/**
 	* Reads a single Principal
 	*
@@ -186,7 +193,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		}
 		return $this->find('info', $id);
 	}
-	
+
 	/**
 	* Deletes a single Principal
 	* note: hijacked the default functionality to access the datasource directly.
@@ -213,62 +220,9 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		echo dumpthis($response);
 		echo dumpthis($this->response);
 		return false;
-		
+
 	}
-	
-	/**
-	* Custom Find: akin to 'first', requires ID for input. see read()
-	* // NOTE: might move this to SCO model instead?
-	* @param string $state
-	* @param array $query
-	* @param array $results
-	*/
-	protected function _findPermissions($state, $query = array(), $results = array()) {
-		if ($state == 'before') {
-			$this->request["action"] = "permissions-info";
-			$pricipalId = 0;
-			if (isset($query[0]) && !empty($query[0])) {
-				$pricipalId = $query[0];
-			} elseif (isset($query['conditions']['id']) && !empty($query['conditions']['id'])) {
-				$pricipalId = $query['conditions']['id'];
-			} elseif (isset($query['conditions'][$this->primaryKey]) && !empty($query['conditions'][$this->primaryKey])) {
-				$pricipalId = $query['conditions'][$this->primaryKey];
-			} elseif (isset($query['conditions'][$this->alias.'.id']) && !empty($query['conditions'][$this->alias.'.id'])) {
-				$pricipalId = $query['conditions'][$this->alias.'.id'];
-			} elseif (isset($query['conditions'][$this->alias.'.'.$this->primaryKey]) && !empty($query['conditions'][$this->alias.'.'.$this->primaryKey])) {
-				$pricipalId = $query['conditions'][$this->alias.'.'.$this->primaryKey];
-			}
-			$scoId = 0;
-			if (isset($query[1]) && !empty($query[1])) {
-				$scoId = $query[1];
-			} elseif (isset($query['conditions']['sco-id']) && !empty($query['conditions']['sco-id'])) {
-				$scoId = $query['conditions']['sco-id'];
-			} elseif (isset($query['conditions'][$this->alias.'.sco-id']) && !empty($query['conditions'][$this->alias.'.sco-id'])) {
-				$scoId = $query['conditions'][$this->alias.'.sco-id'];
-			}
-			if (empty($pricipalId) || empty($scoId)) {
-				return false;
-			}
-			$this->request['principal-id'] = $pricipalId;
-			$this->request['acl-id'] = $scoId;
-			$query = $this->_paginationParams($query);
-			return $query;
-		} else {
-			echo dumpthis($results);
-			$unformatted = array();
-			if (isset($results['Contact'])) {
-				$unformatted = array_merge($unformatted, $results['Contact']);
-			}
-			if (isset($results['Principal'])) {
-				$unformatted = array_merge($unformatted, $results['Principal']);
-			}
-			if (!empty($unformatted)) {
-				return array($this->alias => $unformatted);
-			}
-			return array();
-		}
-	}
-	
+
 	/**
 	* Custom Find: akin to 'first', requires ID for input. see read()
 	* @param string $state
@@ -310,7 +264,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 			return array();
 		}
 	}
-	
+
 	/**
 	* Custom Find: akin to 'all', allows a simple search based on core fields
 	* $this->Principal->find('search', array('conditions' => array('email' => 'sp_devadmin%')));
@@ -327,14 +281,14 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		} else {
 			$unformatted = set::extract($results, "/Principal-list/Principal/.");
 			$results = array();
-			foreach ( $unformatted as $node ) { 
-				$results[] = array($this->alias => $node); 
+			foreach ( $unformatted as $node ) {
+				$results[] = array($this->alias => $node);
 			}
 			return $results;
 		}
 	}
-	
-	
+
+
 	/**
 	* A jankity overwrite of the _findCount method
 	* Needed to clean saves
@@ -354,7 +308,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		$this->request = $initial;
 		return $return;
 	}
-	
+
 }
 
 ?>

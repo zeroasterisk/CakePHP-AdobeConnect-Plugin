@@ -54,12 +54,12 @@ class AdobeConnectPrincipalTestCase extends CakeTestCase {
 			'name' => 'testaccount_first testaccount_last',
 			); 
 		$created = $this->AdobeConnectPrincipal->save($Principal);
-		$this->deleteIds[] = $pid = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
-		$read = $this->AdobeConnectPrincipal->read(null, $pid);
+		$this->deleteIds[] = $principalId = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
+		$read = $this->AdobeConnectPrincipal->read(null, $principalId);
 		$this->assertTrue(!empty($read));
-		$deleteResponse = $this->AdobeConnectPrincipal->delete($pid);
+		$deleteResponse = $this->AdobeConnectPrincipal->delete($principalId);
 		$this->assertTrue($deleteResponse);
-		$read = $this->AdobeConnectPrincipal->read(null, $pid);
+		$read = $this->AdobeConnectPrincipal->read(null, $principalId);
 		$this->assertTrue(empty($read));
 	}
 	function testFindReadPrincipal() {
@@ -72,12 +72,12 @@ class AdobeConnectPrincipalTestCase extends CakeTestCase {
 			'name' => 'testaccount_first testaccount_last'.time().rand(0, 1000),
 			);
 		$created = $this->AdobeConnectPrincipal->save($Principal);
-		$this->deleteIds[] = $pid = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
+		$this->deleteIds[] = $principalId = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
 		$read = $this->AdobeConnectPrincipal->read(null, 123456789012345);
 		$this->assertTrue(empty($read));
-		$read = $this->AdobeConnectPrincipal->read(null, $pid);
+		$read = $this->AdobeConnectPrincipal->read(null, $principalId);
 		$this->assertTrue(count($read)==1);
-		$this->assertTrue($read[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
+		$this->assertTrue($read[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$principalId);
 		$this->assertTrue($read[$this->AdobeConnectPrincipal->alias]['login']==$Principal['login']);
 	}
 	function testFindSearchPrincipal() {
@@ -90,29 +90,29 @@ class AdobeConnectPrincipalTestCase extends CakeTestCase {
 			'name' => 'testaccount_first testaccount_last'.time().rand(0, 1000),
 			);
 		$created = $this->AdobeConnectPrincipal->save($Principal);
-		$this->deleteIds[] = $pid = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
+		$this->deleteIds[] = $principalId = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
 		
 		foreach ( array('email', 'login') as $key ) { 
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => $Principal[$key])));
 			$this->assertTrue(count($found)==1);
-			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
+			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$principalId);
 			
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => substr($Principal[$key], 0, 20))));
 			$this->assertTrue(count($found)==0);
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => substr($Principal[$key], 0, 20).'*')));
 			$this->assertTrue(count($found)==1);
-			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
+			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$principalId);
 			// auto-like with asterisk
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => substr($Principal[$key], 0, 20).'*')));
 			$this->assertTrue(count($found)==1);
-			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
+			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$principalId);
 			// and look, it wildecards the beginning and ending automatically
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => substr($Principal[$key], 0, 20))));
 			$this->assertTrue(count($found)==1);
-			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
+			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$principalId);
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => substr($Principal[$key], 2, 18))));
 			$this->assertTrue(count($found)==1);
-			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$pid);
+			$this->assertTrue($found[0][$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]==$principalId);
 			
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => 'x'.substr($Principal[$key], 2, 18))));
 			$this->assertTrue(count($found)==0);
