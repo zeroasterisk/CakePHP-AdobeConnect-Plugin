@@ -7,7 +7,7 @@
 *
 * NOTE: you should define the $rootScoIdForTesting as the folder you want to create your test content into 
 */
-/* adobe_connect Test cases generated on: 2011-01-07 14:01:41 : 1294432241*/
+
 App::import('model', 'AdobeConnect.AdobeConnectSco');
 
 class AdobeConnectScoTestCase extends CakeTestCase {

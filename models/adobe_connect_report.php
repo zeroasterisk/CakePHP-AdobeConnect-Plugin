@@ -20,12 +20,6 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 	public $name ='AdobeConnectReport';
 	
 	/**
-	* The datasource this model uses
-	* @var string
-	*/
-	public $useDbConfig = 'adobeConnect';
-	
-	/**
 	* default value of "send-email" for the welcome email on new-user-create
 	* @var bool
 	*/

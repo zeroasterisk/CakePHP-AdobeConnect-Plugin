@@ -73,8 +73,8 @@ class AdobeConnectSource extends DataSource {
 	public $icons = array(
 		'archive' => 'An archive of an Adobe Acrobat Acrobat Connect Pro meeting.',
 		'attachment' => 'A piece of content uploaded as an attachment.',
-		'authorware' => 'A piece of multimedia content created with Macromedia® Authorware® from Adobe.',
-		'captivate' => 'A demo or movie created with Adobe Captivate™ .',
+		'authorware' => 'A piece of multimedia content created with Macromedia Authorware from Adobe.',
+		'captivate' => 'A demo or movie created with Adobe Captivate.',
 		'course' => 'A training course.',
 		'curriculum' => 'A curriculum.',
 		'external-event' => 'An external training that can be added to a curriculum.',
@@ -87,7 +87,7 @@ class AdobeConnectSource extends DataSource {
 		'mp3' => 'An MP3 file.',
 		'pdf' => 'An Adobe Portable Document Format file.',
 		'pod' => 'A visual box that provides functionality in a meeting room layout.',
-		'presentation' => 'A presentation created with an earlier version of Adobe Breeze® software.',
+		'presentation' => 'A presentation created with an earlier version of Adobe Breeze software.',
 		'producer' => 'A presentation created with Adobe Presenter.',
 		'seminar' => 'A seminar created with Adobe Acrobat Connect Pro Seminars.',
 		'session' => 'One occurrence of a recurring Acrobat Connect Pro meeting.',
@@ -270,6 +270,12 @@ class AdobeConnectSource extends DataSource {
 	public $log = array();
 	
 	/**
+	* Shows status of if we have auto-failed on a session, changing cache and other details (so we only autofail once, and bypass cache when doing so)
+	* @var bool
+	*/
+	public $autoFailedSession = false;
+	
+	/**
 	* setup the config
 	* setup the HttpSocket class to issue the requests
 	* @param array $config
@@ -325,8 +331,8 @@ class AdobeConnectSource extends DataSource {
 	public function request(&$model, $data = array(), $requestOptions = array()) {
 		if (!is_array($data)) { $data = array(); }
 		if (!is_array($requestOptions)) { $requestOptions = array(); }
-		if (isset($model->request)) {
-			$data = set::merge($model->request);
+		if (isset($model->request) && is_array($model->request)) {
+			$data = set::merge($model->request, $data);
 		}
 		if (isset($model->requestOptions)) {
 			$requestOptions = set::merge($model->requestOptions);
@@ -356,8 +362,11 @@ class AdobeConnectSource extends DataSource {
 				$data[$key] = (empty($val) ? 0 : 1);
 			} elseif (is_array($val)) {
 				$data[$key] = json_encode($val);
+			} elseif ($val===null || $val=="") {
+				unset($data[$key]);
 			}
 		}
+		$dataCleaned = array_diff_key($data, array('method' => 0, 'conditions' => 0, 'order' => 0, 'limit' => 0, 'recursive' => 0, 'joins' => 0, 'offset' => 0, 'page' => 0, 'group' => 0, 'callbacks' => 0, 'fields' => 0));
 		// setup request
     	$requestOptions = set::merge(array(
     		'header' => array(
@@ -369,7 +378,7 @@ class AdobeConnectSource extends DataSource {
 		// do request
     	if ($data['method'] == 'post') {
     		$requestOptions['header']['Content-Type'] = 'text/xml';
-    		$dataCleaned = array_diff_key($data, array('session' => 0, 'method' => 0));
+    		$dataCleaned = array_diff_key($dataCleaned, array('session' => 0));
     		$dataAsXMLArray = array('<params>');
 			foreach ( $dataCleaned as $key => $val ) { 
 				$dataAsXMLArray[] = '<param name="'.$key.'"><![CDATA['.$val.']]></param>';
@@ -382,7 +391,6 @@ class AdobeConnectSource extends DataSource {
     			'body' => $dataAsXML,
     			), $requestOptions));
     	} else {
-    		$dataCleaned = array_diff_key($data, array('method' => 0));
     		$response = $this->HttpSocket->get($this->config['url'], $dataCleaned, $requestOptions);
     		$url = trim(str_replace(array('GET', 'HTTP/1.1'), '', $this->HttpSocket->request['line']));
     		$url = $this->HttpSocket->request['uri']['scheme'].'://'.$this->HttpSocket->request['uri']['host'].$url;
@@ -398,11 +406,11 @@ class AdobeConnectSource extends DataSource {
     	# extract errors
     	if (!$good) {
     		# look for no-login error (session expired?) login again and retry
-    		/* if (isset($responseArray['Status']['subcode']) && $responseArray['Status']['subcode']=="no-login" && (!isset($this->config['autoreset']) || empty($this->config['autoreset']))) {
+    		if (isset($responseArray['Status']['subcode']) && $responseArray['Status']['subcode']=="no-login" && !$this->autoFailedSession) {
+    			$this->autoFailedSession = true;
     			$this->reset("No Login after action - automatic reset and re-attempt");
-    			$this->config['autoreset'] = true;
     			return $this->request($model, $data, $requestOptions);
-    		} */
+    		}
     		# general errors
     		$invalid = set::extract($responseArray, "/Status/Invalid");
     		if (!empty($invalid)) {
@@ -461,7 +469,7 @@ class AdobeConnectSource extends DataSource {
     	$data['data'] = json_encode($data['data']);
     	$data['dataCleaned'] = json_encode($data['dataCleaned']);
     	$data['userKey'] = $this->userKey;
-    	$data['userData'] = $this->users[$this->userKey];
+    	$data['userData'] = (isset($this->users[$this->userKey]) ? $this->users[$this->userKey] : 'missing');
     	$data['errors'] = array_unique($this->errors + $data['errors']);
 		$this->log[] = $data;
 		$data['errors'] = json_encode($data['errors']);
@@ -476,6 +484,7 @@ class AdobeConnectSource extends DataSource {
     * Simple function to return an activated sessionKey 
     * NOTE: if you want to initialize a new sessionKey, use initUser() or reset() and then this function
     * @param array $data (optional)
+    * @param string $userKey (optional)
     * @param string $username (optional)
     * @param string $password (optional)
     * @return string $sessionKey
@@ -500,11 +509,27 @@ class AdobeConnectSource extends DataSource {
     			'isLoggedIn' => false,
     			);
     	}
+    	// return if we've got values
     	if (!empty($this->users[$this->userKey]['sessionKey']) && !empty($this->config[$this->userKey]['isLoggedIn'])) {
     		return $this->users[$this->userKey]['sessionKey'];
     	} elseif (!empty($this->users[$this->userKey]['sessionKey']) && $data['action'] == "login") {
     		return $this->users[$this->userKey]['sessionKey'];
     	}
+    	// check in with the cache, if we have cache (if autoFailed, we ignore cache)
+    	$cacheKey = 'adobe_connect_session_'.date('h').strtolower($this->userKey);
+    	if ($this->config['cacheEngine'] && empty($this->users[$this->userKey]['sessionKey']) && $this->autoFailedSession) {
+			$cachedUserData = Cache::read($cacheKey, $this->config['cacheEngine']);
+			if (!empty($cachedUserData)) {
+				$this->users[$this->userKey] = $cachedUserData;
+			}
+		}
+		// return if we've got values
+    	if (!empty($this->users[$this->userKey]['sessionKey']) && !empty($this->config[$this->userKey]['isLoggedIn'])) {
+    		return $this->users[$this->userKey]['sessionKey'];
+    	} elseif (!empty($this->users[$this->userKey]['sessionKey']) && $data['action'] == "login") {
+    		return $this->users[$this->userKey]['sessionKey'];
+    	}
+    	// get values
 		if (empty($this->users[$this->userKey]['sessionKey'])) {
 			// no session, create it
 			$response = $this->request($this->userKey, array('action' => "common-info"));
@@ -520,27 +545,15 @@ class AdobeConnectSource extends DataSource {
 			$response = $this->request($this->userKey, array('action' => "login", 'login' => $this->users[$this->userKey]['username'], 'password' => $this->users[$this->userKey]['password']));
 			if (isset($response['Status']['code']) && $response['Status']['code'] == "ok") {
 				$this->users[$this->userKey]['isLoggedIn'] = true;
+				if ($this->config['cacheEngine']) {
+					Cache::write($cacheKey, $this->users[$this->userKey], $this->config['cacheEngine']);
+				}
 				return $this->users[$this->userKey]['sessionKey'];
 			}
 		}
     	return false;
     }
 	
-	/**
-    * simple function to determin the time diff from the connect server/timestamps and this server's 
-    * @return int $secondsToAdd to Connect timestamps to end up with this server's (negative numbers are fine, they just subtract)
-    */
-    public function getConnectTimeOffset() {
-    	if (isset($this->config[$this->userKey]['server-time-offset'])) {
-    		return $this->config[$this->userKey]['server-time-offset'];
-    	}
-    	$common = $this->interact("common-info");
-    	$serverTimeEpoch = strtotime($common['Common']['date']);
-    	$selfTime = time();
-    	$secondsToAdd = $selfTime-$serverTimeEpoch;
-    	$this->config[$this->userKey]['server-time-offset'] = $secondsToAdd;
-    	return $secondsToAdd;
-    }
     /**
     * Simple Login functionality 
     * NOTE: if you want to initialize a new sessionKey, use initUser() instead of login()

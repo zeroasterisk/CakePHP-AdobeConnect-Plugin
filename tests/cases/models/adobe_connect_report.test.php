@@ -8,7 +8,7 @@
 * NOTE: you should define the $meetingScoIdForTesting as the meeting you want to report on (it should have some attendance data) 
 * NOTE: you should define the $meetingPrincipalIdForTesting as the user you want to report on (it should have some attendance data) 
 */
-/* adobe_connect Test cases generated on: 2011-01-07 14:01:41 : 1294432241*/
+
 App::import('model', 'AdobeConnect.AdobeConnectReport');
 
 class AdobeConnectScoTestCase extends CakeTestCase {

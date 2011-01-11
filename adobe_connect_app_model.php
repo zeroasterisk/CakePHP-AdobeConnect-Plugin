@@ -3,12 +3,16 @@
 class AdobeConnectAppModel extends AppModel {
 	
 	/**
-	* The models in the plugin get data from the web service, so they don't need
-	* a table.
-	*
+	* The models in the plugin get data from the web service, so they don't need a table.
 	* @var string
 	*/
 	public $useTable = false;
+	
+	/**
+	* The models in the plugin need a datasource
+	* @var string
+	*/
+	public $useDbConfig = 'adobe_connect';
 	
 	/**
 	* Methods in the models result in HTTP requests using the HttpSocket. So
@@ -48,8 +52,8 @@ class AdobeConnectAppModel extends AppModel {
 	* constructed with default basic configuration options, and extra options
 	* from the ADOBECONNECT_CONFIG->{$this->useDbConfig} class property from the file in
 	* plugins/gdata/config/gdata_config.php if it exists, and extra options from
-	* AbobeConnect.config key in the Configure class, if set. Options should include
-	* X-GData-Key as a minimum if required by the AbobeConnect API, and also optionally
+	* AdobeConnect.config key in the Configure class, if set. Options should include
+	* X-GData-Key as a minimum if required by the AdobeConnect API, and also optionally
 	* oauth_consumer_key, oauth_consumer_secret, oauth_token and
 	* oauth_token_secret keys
 	*
@@ -61,42 +65,140 @@ class AdobeConnectAppModel extends AppModel {
 		
 		// Get the list of datasource that the ConnectionManager is aware of
 		$sources = ConnectionManager::sourceList();
-		
 		// If this model's datasource isn't in it, add it
 		if (!in_array($this->useDbConfig, $sources)) {
-			
 			// Default minimum config
 			$config = array(
-				'datasource' => 'AbobeConnect.AbobeConnectSource',
-				'driver' => 'AbobeConnect.' . Inflector::camelize($this->useDbConfig),
+				'datasource' => 'AdobeConnect.AdobeConnectSource',
+				'salt' => 'AdobeConnect123',
+				'url' => null,
+				'username' => null,
+				'password' => null,
 				);
-			
 			// Try an import the plugins/adobe_connect/config/adobe_connect_config.php file and merge
 			// any default and datasource specific config with the defaults above
-			if (App::import(array('type' => 'File', 'name' => 'AbobeConnect.ADOBECONNECT_CONFIG', 'file' => 'config'.DS.'gdata_config.php'))) {
+			if (App::import(array('type' => 'File', 'name' => 'AdobeConnect.ADOBECONNECT_CONFIG', 'file' => APP.'config'.DS.'adobe_connect_config.php'))) {
 				$ADOBECONNECT_CONFIG = new ADOBECONNECT_CONFIG();
 				if (isset($ADOBECONNECT_CONFIG->default)) {
-					$config = array_merge($config, $ADOBECONNECT_CONFIG->default);
+					$config = set::merge($config, $ADOBECONNECT_CONFIG->default);
 				}
 				if (isset($ADOBECONNECT_CONFIG->{$this->useDbConfig})) {
-					$config = array_merge($config, $ADOBECONNECT_CONFIG->{$this->useDbConfig});
+					$config = set::merge($config, $ADOBECONNECT_CONFIG->{$this->useDbConfig});
+				}
+			} elseif (App::import(array('type' => 'File', 'name' => 'AdobeConnect.ADOBECONNECT_CONFIG', 'file' => 'config'.DS.'adobe_connect_config.php'))) {
+				$ADOBECONNECT_CONFIG = new ADOBECONNECT_CONFIG();
+				if (isset($ADOBECONNECT_CONFIG->default)) {
+					$config = set::merge($config, $ADOBECONNECT_CONFIG->default);
+				}
+				if (isset($ADOBECONNECT_CONFIG->{$this->useDbConfig})) {
+					$config = set::merge($config, $ADOBECONNECT_CONFIG->{$this->useDbConfig});
 				}
 			}
-			
 			// Add any config from Configure class that you might have added at any
 			// point before the model is instantiated.
-			if (($configureConfig = Configure::read('AbobeConnect.config')) != false) {
-				$config = array_merge($config, $configureConfig);
+			if (($configureConfig = Configure::read('AdobeConnect.config')) != false) {
+				$config = set::merge($config, $configureConfig);
 			}
-			
+			// double-check we have required keys
+			if (empty($config['url'])) {
+				trigger_error(__d('adobe_connect', "Invalid AdobeConnectSource Configuration, missing 'url' key. useDbConfig = [{$this->useDbConfig}]", true), E_USER_WARNING);
+				die();
+			} elseif (empty($config['username']) || empty($config['password'])) {
+				trigger_error(__d('adobe_connect', "Invalid AdobeConnectSource Configuration, missing 'username' or 'password' key.  This should be the API user account you want to use. useDbConfig = [{$this->useDbConfig}]", true), E_USER_WARNING);
+				die();
+			}
+			if ($this->useDbConfig=='default' || $this->useDbConfig=='test' || $this->useDbConfig=='test_suite') {
+				$this->useDbConfig = 'adobe_connect_config';
+			}
 			// Add the datasource, with it's new config, to the ConnectionManager
 			ConnectionManager::create($this->useDbConfig, $config);
-			
 		}
-		
+		$useDbConfig = $this->useDbConfig;
 		parent::__construct($id, $table, $ds);
-		
+		$this->useDbConfig = $useDbConfig;
 	}
+	
+	/**
+    * Simple function to return the $config array
+    * @param array $config if set, merge with existing array
+    * @return array $config
+    */
+	public function config($config = array()) {
+		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		if (!empty($config) && is_array($config)) {
+			$db->config = set::merge($db->config, $config);
+		}
+		return $db->config;
+	}
+	
+	/**
+    * Simple function to return an activated sessionKey 
+    * NOTE: if you want to initialize a new sessionKey, use initUser() or reset() and then this function
+    * @param string $userKey (optional)
+    * @param string $username (optional)
+    * @param string $password (optional)
+    * @return string $sessionKey
+    */
+	public function getSessionKey($userKey=null, $username=null, $password=null) {
+		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		return $db->getSessionKey($data=array(), $userKey, $username, $password);
+	}
+	
+	/**
+    * simple function to determin the time diff from the connect server/timestamps and this server's 
+    * @return int $secondsToAdd to Connect timestamps to end up with this server's (negative numbers are fine, they just subtract)
+    */
+    public function getConnectTimeOffset() {
+    	$db =& ConnectionManager::getDataSource($this->useDbConfig);
+    	if (isset($db->config['server-time-offset']) && !empty($db->config['server-time-offset'])) {
+    		return $db->config['server-time-offset'];
+    	}
+    	$common = $db->request($this, array('action' => 'common-info'));
+    	if (!isset($common['Common']['date'])) {
+    		$this->errors[] = $error = "{$this->alias}::getConnectTimeOffset: Unable to get the Common Information";
+			trigger_error(__d('adobe_connect', $error, true), E_USER_WARNING);
+			return false;
+    	}
+    	$serverTimeEpoch = strtotime($common['Common']['date']);
+    	$selfTime = time();
+    	$secondsToAdd = $selfTime-$serverTimeEpoch;
+    	$db->config['server-time-offset'] = $secondsToAdd;
+    	return $secondsToAdd;
+    }
+	
+    /**
+	* Special request action... allows custom API calls to happen (make sure you've got your $data array correct) 
+	*
+	* @param array $data
+	* @param array $setExtractPath (optional, if set, it runs set::extract() on the response)
+	*/
+	public function request($data, $setExtractPath = null) {
+		if (is_string($data)) {
+			$data['action'] = $data;
+		}
+		if (!isset($data['action'])) {
+			$this->errors[] = $error = "{$this->alias}::Request: Missing action key ".json_encode($data);
+    		trigger_error(__d('adobe_connect', $error, true), E_USER_WARNING);
+			return false;
+		}
+		if (!isset($data['data']) && !empty($data['data'])) {
+			$data = set::merge($data, $this->parseFiltersFromQuery($data['data']));
+			unset($data['data']);
+		}
+		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$response = $db->request($this, $data);
+		if (empty($response)) {
+			$response = $db->response;
+		}
+		if (empty($response)) {
+			return false;
+		} 
+		if (is_string($setExtractPath) && !empty($setExtractPath)) {
+			return set::extract($response, $setExtractPath);
+		}
+    	return $response;
+	}
+	
 	/**
 	* Overloads the Model::find() method. 
 	* Resets request array in between finds, caches initial request array and resets on complete.

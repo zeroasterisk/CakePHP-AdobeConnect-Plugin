@@ -20,12 +20,6 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 	public $name ='AdobeConnectPermission';
 
 	/**
-	* The datasource this model uses
-	* @var string
-	*/
-	public $useDbConfig = 'adobeConnect';
-
-	/**
 	* default value of "send-email" for the welcome email on new-user-create
 	* @var bool
 	*/

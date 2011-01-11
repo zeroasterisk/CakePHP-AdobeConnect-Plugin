@@ -20,12 +20,6 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	public $name ='AdobeConnectSco';
 
 	/**
-	* The datasource this model uses
-	* @var string
-	*/
-	public $useDbConfig = 'adobeConnect';
-
-	/**
 	* default value of "send-email" for the welcome email on new-user-create
 	* @var bool
 	*/
@@ -411,7 +405,34 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			return $results;
 		}
 	}
-
+	
+	/**
+	* Custom Find: path (folder heirarchy)
+	*
+	* $this->Sco->find('path', $sco_id);
+	* @param string $state
+	* @param array $query
+	* @param array $results
+	*/
+	protected function _findPath($state, $query = array(), $results = array()) {
+		$return = $this->_findInfo($state, $query, $results);
+		if (isset($return[$this->alias]['folder-id'])) {
+			$path = array();
+			$node = $return;
+			while (!empty($node)) {
+    			$path[($node[$this->alias]['sco-id'])] = $node[$this->alias]['name'];
+    			if (isset($node[$this->alias]['folder-id']) && !empty($node[$this->alias]['folder-id'])) {
+    				$node = $this->find('info', $node[$this->alias]['folder-id']);
+    			} else {
+    				$node = false;
+    			}
+    		}
+			return array_reverse($path, true);
+		}
+		return $return;
+	}
+	
+	
 	/**
 	* A jankity overwrite of the _findCount method
 	* Needed to clean saves

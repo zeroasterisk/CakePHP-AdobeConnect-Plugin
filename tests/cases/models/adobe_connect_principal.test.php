@@ -5,7 +5,7 @@
 *
 * If you don't want to create Principals, don't run this test.
 */
-/* adobe_connect Test cases generated on: 2011-01-07 14:01:41 : 1294432241*/
+
 App::import('model', 'AdobeConnect.AdobeConnectPrincipal');
 
 class AdobeConnectPrincipalTestCase extends CakeTestCase {
