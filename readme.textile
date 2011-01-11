@@ -18,26 +18,26 @@ See the unit tests for more information on how to use.
 h2. Installation [--> app/plugins/adobe_connect]
 
 If you're using git, you can include this as a submodule in your repository:
-<code><pre>
+<pre><code>
     git submodule add git@github.com:zeroasterisk/CakePHP-AdobeConnect-Plugin.git app/plugins/adobe_connect
     git submodule init
     git submodule update
-</pre></code>
+</code></pre>
 Or you can clone the repository (but don't do this inside of another repository):
-<code><pre>
+<pre><code>
     git clone git@github.com:zeroasterisk/CakePHP-AdobeConnect-Plugin.git app/plugins/adobe_connect
-</pre></code>
+</code></pre>
 Or you can download to:
-<code><pre>
+<pre><code>
     cp CakePHP-AdobeConnect-Plugin app/plugins/adobe_connect
-</pre></code>
+</code></pre>
 h2. Configuration
 
 * Option 1) Add @$adobe_connect = array()@ to your @app/config/database.php@ config file.
 * Option 2) Create a file @app/config/adobe_connect_config.php@ @<?php class ADOBECONNECT_CONFIG { var $adobe_connect = array(}; } ?>@
 
 Either way, you'll want to configure your connection like this:
-<code><pre>
+<pre><code>
     var $adobe_connect = array(
         'datasource' => 'AdobeConnect.AdobeConnectSource',
         'username' => 'admin@domain.com',
@@ -55,21 +55,21 @@ Either way, you'll want to configure your connection like this:
             'default-template' => "49848",
             )
     );
-</pre></code>
+</code></pre>
 h2. Usage
 
 You can specify any of the Models in your controller's $uses array:
-<code><pre>
+<pre><code>
     var $uses = array('AdobeConnect.AdobeConnectSco', 'AdobeConnect.AdobeConnectPrincipal', 'AdobeConnect.AdobeConnectPermission', 'AdobeConnect.AdobeConnectReport');
-</pre></code>
+</code></pre>
 Or you can initialize the model, like any other Model:
-<code><pre>
+<pre><code>
     if (!isset($this->AdobeConnectSco)) {
         App::import('model', 'AdobeConnect.AdobeConnectSco');
         $this->AdobeConnectSco = ClassRegistry::init('AdobeConnectSco');
         $this->AdobeConnectConfig = $this->AdobeConnectSco->config();
     }
-</pre></code>
+</code></pre>
 Once initilized, you can use it like any other Model.  There are several exposed custom find methods, and custom save/delete functions as well.
 
 * @$this->AdobeConnectSco->save();@
