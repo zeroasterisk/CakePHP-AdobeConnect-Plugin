@@ -226,7 +226,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 
 	/**
 	* Custom Find: akin to 'first', requires ID for input. see read()
-	* $this->Sco->find('info', 12345);
+	* $this->AdobeConnectSco->find('info', 12345);
 	* @param string $state
 	* @param array $query
 	* @param array $results
@@ -275,12 +275,12 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	* The sco-search-by-field action searches the content of some types of SCOs for the query string. The search includes folders, training courses, curriculums, meetings, content, and archives.
 	* To search for multi-word terms with spaces between the words, search only on the first word in the term and use a wildcard at the end.
 	*
-	* $this->Sco->find('search', 'my meeting');
-	* $this->Sco->find('search', array('conditions' => array('name' => 'my meeting')));
+	* $this->AdobeConnectSco->find('search', 'my meeting');
+	* $this->AdobeConnectSco->find('search', array('conditions' => array('name' => 'my meeting')));
 	* // you can specify other filters as secondary conditions (NOTE: SEACH CONDITONS MUST BE FIRST)
-	* $this->Sco->find('search', array('conditions' => array('name' => 'my meeting', 'type' => 'meeting')));
+	* $this->AdobeConnectSco->find('search', array('conditions' => array('name' => 'my meeting', 'type' => 'meeting')));
 	* // you can use wildcards (*,?) but you can not start a query with them
-	* $this->Sco->find('search', array('conditions' => array('name' => 'my*meeting', 'type' => 'meeting')));
+	* $this->AdobeConnectSco->find('search', array('conditions' => array('name' => 'my*meeting', 'type' => 'meeting')));
 	* @param string $state
 	* @param array $query
 	* @param array $results
@@ -328,8 +328,8 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 
 	/**
 	* Custom Find: akin to 'all', searches within a sco, optionally filter with conditions
-	* $this->Sco->find('contents', 12345);
-	* $this->Sco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
+	* $this->AdobeConnectSco->find('contents', 12345);
+	* $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
 	* @param string $state
 	* @param array $query
 	* @param array $results
@@ -370,8 +370,8 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	* The sco-search action searches the content of some types of SCOs for the query string. The types of SCOs searched include presentation archives, meeting archives, and the presentation components of a course or curriculum. A presentation that is included in a course returns two sets of results, one for the actual presentation and one for the course. The search does not include the SCO name or any metadata about the SCO stored in the database.
 	* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171dd627-7d5e
 	*
-	* $this->Sco->find('searchcontent', 'welcome training');
-	* $this->Sco->find('searchcontent', array('query' => 'welcome training', 'conditions' => array('type' => 'content')));
+	* $this->AdobeConnectSco->find('searchcontent', 'welcome training');
+	* $this->AdobeConnectSco->find('searchcontent', array('query' => 'welcome training', 'conditions' => array('type' => 'content')));
 	* @param string $state
 	* @param array $query
 	* @param array $results
@@ -409,7 +409,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	/**
 	* Custom Find: path (folder heirarchy)
 	*
-	* $this->Sco->find('path', $sco_id);
+	* $this->AdobeConnectSco->find('path', $sco_id);
 	* @param string $state
 	* @param array $query
 	* @param array $results
