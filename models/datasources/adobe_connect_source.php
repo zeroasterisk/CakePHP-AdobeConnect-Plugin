@@ -371,7 +371,7 @@ class AdobeConnectSource extends DataSource {
     	$requestOptions = set::merge(array(
     		'header' => array(
     			'Connection' => 'close',
-    			'User-Agent' => 'CakePHP AdobeConnectComponent v.'.$this->config['AdobeConnect-Version'],
+    			'User-Agent' => 'CakePHP AdobeConnect Plugin v.'.$this->config['AdobeConnect-Version'],
 				)
 			), $requestOptions);
 		$this->HttpSocket->reset();
