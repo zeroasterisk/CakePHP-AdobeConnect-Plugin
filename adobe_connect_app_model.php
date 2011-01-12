@@ -141,7 +141,7 @@ class AdobeConnectAppModel extends AppModel {
     */
 	public function getSessionKey($userKey=null, $username=null, $password=null) {
 		$db =& ConnectionManager::getDataSource($this->useDbConfig);
-		return $db->getSessionKey($data=array(), $userKey, $username, $password);
+		return $db->getSessionKey(array('action' => 'custom'), $userKey, $username, $password);
 	}
 	
 	/**

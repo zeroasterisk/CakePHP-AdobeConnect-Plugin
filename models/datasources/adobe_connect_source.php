@@ -344,12 +344,12 @@ class AdobeConnectSource extends DataSource {
 		extract($data);
 		$errors = array();
 		if ($data['action'] == "unknown") {
-			echo dumpthis($data);
-			echo dumpthis($model->request);
+			$this->errors[] = $error = "{$model->alias}::request: missing action: ".json_encode($data);
+			trigger_error(__d('adobe_connect', $error, true), E_USER_WARNING);
 			return false;
 		}
 		if ($data['action'] != "common-info") {
-			$data['session'] = $this->getSessionKey($data);
+			$data['session'] = $this->getSessionKey($data, $this->userKey);
 			if (empty($data['session']) && !empty($this->users[$this->userKey]['sessionKey'])) {
 				$data['session'] = $this->users[$this->userKey]['sessionKey'];
 			}
@@ -516,8 +516,11 @@ class AdobeConnectSource extends DataSource {
     		return $this->users[$this->userKey]['sessionKey'];
     	}
     	// check in with the cache, if we have cache (if autoFailed, we ignore cache)
-    	$cacheKey = 'adobe_connect_session_'.date('h').strtolower($this->userKey);
-    	if ($this->config['cacheEngine'] && empty($this->users[$this->userKey]['sessionKey']) && $this->autoFailedSession) {
+    	$cacheKey = false;
+    	if ($this->config['cacheEngine'] && $this->userKey == $this->config['apiUserKey']) {
+    		$cacheKey = 'adobe_connect_session_'.date('h').strtolower($this->userKey);
+    	}
+    	if ($cacheKey && empty($this->users[$this->userKey]['sessionKey']) && !$this->autoFailedSession) {
 			$cachedUserData = Cache::read($cacheKey, $this->config['cacheEngine']);
 			if (!empty($cachedUserData)) {
 				$this->users[$this->userKey] = $cachedUserData;
@@ -545,7 +548,7 @@ class AdobeConnectSource extends DataSource {
 			$response = $this->request($this->userKey, array('action' => "login", 'login' => $this->users[$this->userKey]['username'], 'password' => $this->users[$this->userKey]['password']));
 			if (isset($response['Status']['code']) && $response['Status']['code'] == "ok") {
 				$this->users[$this->userKey]['isLoggedIn'] = true;
-				if ($this->config['cacheEngine']) {
+				if ($cacheKey) {
 					Cache::write($cacheKey, $this->users[$this->userKey], $this->config['cacheEngine']);
 				}
 				return $this->users[$this->userKey]['sessionKey'];

@@ -137,23 +137,22 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			$this->request = $initial;
 			return false;
 		}
-		if (isset($result[$this->alias][$this->primaryKey])) {
-			$this->id = $result[$this->alias][$this->primaryKey];
-			$this->response[$this->alias][$this->primaryKey] = $this->id;
-			$this->setInsertID($this->id);
-			$this->request = $initial;
-			return $result;
-		}
-		if (isset($this->response["Sco"]) && !isset($this->response[$this->alias])) {
-			$this->response[$this->alias] = $this->response["Sco"];
+		if (isset($this->response['Sco'][$this->primaryKey])) {
+			$this->id = $this->response['Sco'][$this->primaryKey];
+			$result[$this->alias][$this->primaryKey] = $this->id;
 		}
 		if (isset($this->response[$this->alias][$this->primaryKey])) {
-			$this->id = $this->response[$this->alias][$this->primaryKey];
-			$this->response[$this->alias][$this->primaryKey] = $this->id;
+			$result = $this->response;
+		}
+		if (isset($result[$this->alias][$this->primaryKey])) {
+			$this->id = $result[$this->alias][$this->primaryKey];
 			$result[$this->alias][$this->primaryKey] = $this->id;
-			$this->setInsertID($this->id);
+		} else {
 			$this->request = $initial;
-			return $result;
+			return false;
+		}
+		if ($result) {
+			$this->setInsertID($result[$this->alias][$this->primaryKey]);
 		}
 		$this->request = $initial;
 		return $result;

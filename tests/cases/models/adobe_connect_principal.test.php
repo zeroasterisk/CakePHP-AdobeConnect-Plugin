@@ -36,6 +36,7 @@ class AdobeConnectPrincipalTestCase extends CakeTestCase {
 			'name' => 'testaccount_first testaccount_last',
 			); 
 		$created = $this->AdobeConnectPrincipal->save($Principal);
+		$this->assertTrue($created);
 		$this->deleteIds[] = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
 		$this->assertTrue(isset($created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]));
 		$this->assertTrue(!empty($created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey]));
@@ -90,8 +91,8 @@ class AdobeConnectPrincipalTestCase extends CakeTestCase {
 			'name' => 'testaccount_first testaccount_last'.time().rand(0, 1000),
 			);
 		$created = $this->AdobeConnectPrincipal->save($Principal);
+		$this->assertTrue($created);
 		$this->deleteIds[] = $principalId = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
-		
 		foreach ( array('email', 'login') as $key ) { 
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key => $Principal[$key])));
 			$this->assertTrue(count($found)==1);
@@ -119,7 +120,6 @@ class AdobeConnectPrincipalTestCase extends CakeTestCase {
 			$found = $this->AdobeConnectPrincipal->find("search", array('conditions' => array($key.' like' => substr($Principal[$key], 2, 18).'x')));
 			$this->assertTrue(count($found)==0);
 		}
-		
 	}
 }
 ?>

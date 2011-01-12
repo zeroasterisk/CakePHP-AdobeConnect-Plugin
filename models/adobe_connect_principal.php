@@ -78,7 +78,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	* @param array $data See Model::save()
 	* @param boolean $validate See Model::save() false
 	* @param array $fieldList See Model::save()
-	* @return boolean
+	* @return array $data saved
 	*/
 	public function save($data = null, $validate = false, $fieldList = array()) {
 		$initial = $this->request;
@@ -135,16 +135,37 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		$this->request = $data;
 		$this->request['action'] = "principal-update";
 		$result = parent::save(array($this->alias => $data), $validate, $fieldList);
-		if (isset($this->response['Principal']['principal-id'])) {
-			$this->id = $this->response['Principal']['principal-id'];
-			$this->response[$this->alias][$this->primaryKey] = $this->id;
+		if (isset($this->response['Status']['Invalid'])) {
+			$this->errors[] = $error = "{$this->alias}::Save: Invalid Fields: ".json_encode($this->response['Status']['Invalid']);
+			trigger_error(__d('adobe_connect', $error, true), E_USER_WARNING);
+			$this->request = $initial;
+			return false;
+		}
+		if (isset($this->response['Principal'][$this->primaryKey])) {
+			$this->id = $this->response['Principal'][$this->primaryKey];
+			$result[$this->alias][$this->primaryKey] = $this->id;
+		}
+		if (isset($this->response[$this->alias][$this->primaryKey])) {
+			$result = $this->response;
+		}
+		if (isset($result[$this->alias][$this->primaryKey])) {
+			$this->id = $result[$this->alias][$this->primaryKey];
 			$result[$this->alias][$this->primaryKey] = $this->id;
 		} else {
 			$this->request = $initial;
 			return false;
 		}
+		if (isset($data['password']) && !empty($data['password'])) {
+			/**
+			* run a secondary API call to update the user password
+			* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171dd627-7d12
+			*/ 
+			$db =& ConnectionManager::getDataSource($this->useDbConfig);
+			$this->request = array();
+			$passwordUpdated = $db->request($this, array('action' => "user-update-pwd", "user-id" => $this->id, "password" => $data['password'], "password-verify" => $data['password']));
+		}
 		if ($result) {
-			$this->setInsertID($this->response[$this->alias][$this->primaryKey]);
+			$this->setInsertID($result[$this->alias][$this->primaryKey]);
 		}
 		$this->request = $initial;
 		return $result;
@@ -211,8 +232,6 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		if (isset($this->response['Status']['code']) && $this->response['Status']['code']=="no-data") {
     		return true;
     	}
-		echo dumpthis($response);
-		echo dumpthis($this->response);
 		return false;
 
 	}
