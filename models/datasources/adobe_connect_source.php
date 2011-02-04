@@ -243,7 +243,8 @@ class AdobeConnectSource extends DataSource {
 	* @var array
 	*/
 	public $keysForceBoolValues = array("disabled", "has-children", );
-	public $keysDataRestricted = array("uri", );
+	public $keysDataRestricted = array("uri");
+	public $keysDataCleanRestricted = array('method' => 0, 'conditions' => 0, 'order' => 0, 'limit' => 0, 'recursive' => 0, 'joins' => 0, 'offset' => 0, 'page' => 0, 'group' => 0, 'callbacks' => 0, 'fields' => 0);
 	
 	/**
 	* Container for HttpSocket object
@@ -366,7 +367,7 @@ class AdobeConnectSource extends DataSource {
 				unset($data[$key]);
 			}
 		}
-		$dataCleaned = array_diff_key($data, array('method' => 0, 'conditions' => 0, 'order' => 0, 'limit' => 0, 'recursive' => 0, 'joins' => 0, 'offset' => 0, 'page' => 0, 'group' => 0, 'callbacks' => 0, 'fields' => 0));
+		$dataCleaned = array_diff_key($data, $this->keysDataCleanRestricted);
 		// setup request
     	$requestOptions = set::merge(array(
     		'header' => array(

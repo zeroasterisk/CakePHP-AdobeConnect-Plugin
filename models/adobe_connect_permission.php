@@ -124,7 +124,7 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 			} elseif ($isMeeting && in_array($data['permission-id'], $permissionsOptions) && !in_array($data['permission-id'], array_keys($permissionsOptions))) {
 				$meetingOptions = array_flip($permissionsOptions);
 				$data['permission-id'] = $meetingOptions[$data['permission-id']];
-			} elseif (!$isMeeting && !in_array($data['permission-id'], $permissionsNonMeetings) && !in_array($data['permission-id'], array_keys($permissionsOptions))) {
+			} elseif (!$isMeeting && !in_array($data['permission-id'], $permissionsOptions) && in_array($data['permission-id'], array_keys($permissionsOptions))) {
 				$data['permission-id'] = $permissionsOptions[$data['permission-id']];
 			} else {
 				$this->errors[] = $error = "{$this->alias}::Save: Unable to verify permission [{$data['permission-id']}] for type of SCO [{$sco[$this->AdobeConnectSco->alias]['type']}]";
