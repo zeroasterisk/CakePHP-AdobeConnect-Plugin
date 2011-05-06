@@ -288,6 +288,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	protected function _findSearch($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
 			$this->request["action"] = "principal-list";
+			$this->request["method"] = "get";
 			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
 			$query = $this->_paginationParams($query);
 			return $query;

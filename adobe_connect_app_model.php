@@ -367,10 +367,18 @@ class AdobeConnectAppModel extends AppModel {
 		}
 		return $request;
 	}
+	/**
+	* A string to search for. To use any of these special characters in the query string, escape them with a backslash before the character: 
+	*    + - && || ! ( ) { } [ ] ^ " ~ * ? : \
+	*    The query string is not case-sensitive and allows wildcard characters * and ? at the end of the query string.
+	* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html
+	* @param string $string
+	* @return string $string
+	*/
 	function escapeString($string) {
 		return str_replace(
 			array('+', '-', '&&', '||', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', '*', '?', ':', '\\'),
-			array('\\+', '\\-', '\\&&', '\\||', '\\!', '\\(', '\\)', '\\{', '\\}', '\\[', '\\]', '\\^', '\\"', '\\~', '%', '\\?', '\\:', '\\\\'),
+			array('\\+', '-', '\\&&', '\\||', '\\!', '\\(', '\\)', '\\{', '\\}', '\\[', '\\]', '\\^', '\\"', '\\~', '%', '\\?', '\\:', '\\\\'),
 			trim($string));
 	}
 }
