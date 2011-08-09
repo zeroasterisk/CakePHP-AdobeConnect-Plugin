@@ -511,7 +511,7 @@ class AdobeConnectSource extends DataSource {
     			);
     	}
     	// return if we've got values
-    	if (!empty($this->users[$this->userKey]['sessionKey']) && !empty($this->config[$this->userKey]['isLoggedIn'])) {
+    	if (!empty($this->users[$this->userKey]['sessionKey']) && !empty($this->users[$this->userKey]['isLoggedIn'])) {
     		return $this->users[$this->userKey]['sessionKey'];
     	} elseif (!empty($this->users[$this->userKey]['sessionKey']) && $data['action'] == "login") {
     		return $this->users[$this->userKey]['sessionKey'];
@@ -528,7 +528,7 @@ class AdobeConnectSource extends DataSource {
 			}
 		}
 		// return if we've got values
-    	if (!empty($this->users[$this->userKey]['sessionKey']) && !empty($this->config[$this->userKey]['isLoggedIn'])) {
+    	if (!empty($this->users[$this->userKey]['sessionKey']) && !empty($this->users[$this->userKey]['isLoggedIn'])) {
     		return $this->users[$this->userKey]['sessionKey'];
     	} elseif (!empty($this->users[$this->userKey]['sessionKey']) && $data['action'] == "login") {
     		return $this->users[$this->userKey]['sessionKey'];
