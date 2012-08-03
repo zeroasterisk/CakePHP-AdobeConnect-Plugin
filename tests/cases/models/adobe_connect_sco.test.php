@@ -26,6 +26,11 @@ class AdobeConnectScoTestCase extends CakeTestCase {
 		unset($this->AdobeConnectSco);
 		ClassRegistry::flush();
 	}
+	function test_read(){
+		$parent_sco_id = '11637';
+		$parentScoInfo = $this->AdobeConnectSco->read(null, $parent_sco_id);
+		$this->assertEqual('11637', $parentScoInfo['AdobeConnectSco']['sco-id']);
+	}
 	function testBasics() {
 		$this->assertTrue(is_object($this->AdobeConnectSco));
 	}
