@@ -220,9 +220,30 @@ class AdobeConnectSco extends AdobeConnectAppModel {
     		return true;
     	}
 		return false;
-
 	}
-
+	/**
+	* Moves an SCO $sco_id to $folder_id
+	**/
+	public function move($sco_id, $folder_id) {
+		if (empty($sco_id)) {
+			$sco_id = $this->id;
+		}
+		if (empty($sco_id) || empty($folder_id)) {
+			return false;
+		}
+		$this->request['action'] = "sco-move";
+		$this->request['sco-id'] = $sco_id;
+		$this->request['folder-id'] = $folder_id;
+		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$response = $db->request($this);
+		if (!empty($response)) {
+			return true;
+		}
+		if (isset($this->response['Status']['code']) && $this->response['Status']['code']=="no-data") {
+    		return true;
+    	}
+		return false;
+	}
 	/**
 	* Custom Find: akin to 'first', requires ID for input. see read()
 	* $this->AdobeConnectSco->find('info', 12345);

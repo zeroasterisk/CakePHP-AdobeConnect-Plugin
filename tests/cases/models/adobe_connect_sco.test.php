@@ -230,5 +230,8 @@ class AdobeConnectScoTestCase extends CakeTestCase {
 	function testFindSearchcontentSco() {
 		// don't really know how to test this one... not terribly important to me either.
 	}
+	function testMoveSco() {
+		// create sco, move it, look for it in the new location, look for it in the old location
+	}
 }
 ?>

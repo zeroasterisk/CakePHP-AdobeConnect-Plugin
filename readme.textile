@@ -86,6 +86,7 @@ Once initilized, you can use it like any other Model.  There are several exposed
 * @$this->AdobeConnectSco->find('searchcontent', 'welcome training');@
 * @$this->AdobeConnectSco->find('searchcontent', array('query' => 'welcome training', 'conditions' => array('type' => 'content')));@
 * @$this->AdobeConnectSco->find('path', $sco_id);@
+* @$this->AdobeConnectSco->move($sco_id, $folder_id;@
 * @$this->AdobeConnectPrincipal->save();@
 * @$this->AdobeConnectPrincipal->delete();@
 * @$this->AdobeConnectPrincipal->find('search', 'my login');@
