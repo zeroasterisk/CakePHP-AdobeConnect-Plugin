@@ -70,7 +70,8 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	public $_findMethods = array(
 		'search' => true,
 		'contents' => true,
-		'contents' => true,
+		'contents_recursive' => true,
+		'contents_non_recursive' => true,
 		'info' => true,
 		'path' => true,
 		);
@@ -348,6 +349,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 
 	/**
 	* Custom Find: akin to 'all', searches within a sco, optionally filter with conditions
+	* routes to recursive or non-recursive
 	* $this->AdobeConnectSco->find('contents', 12345);
 	* $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
 	* @param string $state
@@ -355,6 +357,20 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	* @param array $results
 	*/
 	protected function _findContents($state, $query = array(), $results = array()) {
+		if (isset($query['recursive']) && !empty($query['recursive'])) {
+			return $this->_findContentsRecursive($state, $query, $results);
+		}
+		return $this->_findContentsNonRecursive($state, $query, $results);
+	}
+	/**
+	* Custom Find: akin to 'all', searches within a sco, optionally filter with conditions Recursive
+	* $this->AdobeConnectSco->find('contents', 12345);
+	* $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
+	* @param string $state
+	* @param array $query
+	* @param array $results
+	*/
+	protected function _findContentsRecursive($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
 			$this->request = array("action" => "sco-expanded-contents");
 			if (isset($query['sco-id']) && !empty($query['sco-id']) && is_numeric($query['sco-id'])) {
@@ -376,6 +392,43 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			return $query;
 		} else {
 			$unformatted = set::extract($results, "/Expanded-scos/Sco/.");
+			$results = array();
+			foreach ( $unformatted as $node ) {
+				$results[] = array($this->alias => $node);
+			}
+			return $results;
+		}
+	}
+
+	/**
+	* Custom Find: akin to 'all', searches within a sco, optionally filter with conditions Non Recursive
+	* $this->AdobeConnectSco->find('contents', 12345);
+	* $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
+	* @param string $state
+	* @param array $query
+	* @param array $results
+	*/
+	protected function _findContentsNonRecursive($state, $query = array(), $results = array()) {
+		if ($state == 'before') {
+			$this->request = array("action" => "sco-contents");
+			if (isset($query['sco-id']) && !empty($query['sco-id']) && is_numeric($query['sco-id'])) {
+				$this->request["sco-id"] = $query['sco-id'];
+				unset($query['sco-id']);
+			} elseif (isset($query['conditions']['sco-id']) && !empty($query['conditions']['sco-id']) && is_numeric($query['conditions']['sco-id'])) {
+				$this->request["sco-id"] = $query['conditions']['sco-id'];
+				unset($query['conditions']['sco-id']);
+			} elseif (isset($query[0]) && !empty($query[0]) && is_numeric($query[0])) {
+				$this->request["sco-id"] = $query[0];
+				unset($query[0]);
+			}
+			if (!isset($this->request["sco-id"]) || empty($this->request["sco-id"])) {
+				die("ERROR: you must include a value for to find('contents', \$options['sco-id'])");
+			}
+			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
+			$query = $this->_paginationParams($query);
+			return $query;
+		} else {
+			$unformatted = set::extract($results, "/Scos/Sco/.");
 			$results = array();
 			foreach ( $unformatted as $node ) {
 				$results[] = array($this->alias => $node);
@@ -425,7 +478,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			return $results;
 		}
 	}
-	
+
 	/**
 	* Custom Find: path (folder heirarchy)
 	*
@@ -451,8 +504,8 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		}
 		return $return;
 	}
-	
-	
+
+
 	/**
 	* A jankity overwrite of the _findCount method
 	* Needed to clean saves
