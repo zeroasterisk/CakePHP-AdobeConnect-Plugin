@@ -11,6 +11,8 @@
 * @copyright (c) 2011 Alan Blount
 * @license MIT License - http://www.opensource.org/licenses/mit-license.php
 */
+App::uses('AdobeConnectSco', 'AdobeConnect.Model');
+App::uses('AdobeConnectPrincipal', 'AdobeConnect.Model');
 class AdobeConnectPermission extends AdobeConnectAppModel {
 
 	/**
@@ -96,10 +98,8 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
     	}
     	if ((is_array($validate) && !empty($validate['validate'])) || !empty($validate)) {
     		if (!isset($this->AdobeConnectPrincipal) || !isset($this->AdobeConnectSco)) {
-				App::import('model', 'AdobeConnect.AdobeConnectPrincipal');
-				$this->AdobeConnectPrincipal = ClassRegistry::init('AdobeConnectPrincipal');
-				App::import('model', 'AdobeConnect.AdobeConnectSco');
-				$this->AdobeConnectSco = ClassRegistry::init('AdobeConnectSco');
+				$this->AdobeConnectPrincipal = ClassRegistry::init('AdobeConnect.AdobeConnectPrincipal');
+				$this->AdobeConnectSco = ClassRegistry::init('AdobeConnect.AdobeConnectSco');
 			}
     		// validate Principal exists
     		$principal = $this->AdobeConnectPrincipal->read(null, $data['principal-id']);
@@ -138,7 +138,7 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 		$db =& ConnectionManager::getDataSource($this->useDbConfig);
 		$response = $db->request($this, $this->request);
 		$this->request = $initial;
-		if (isset($response['Status']['code']) && $response['Status']['code']=='ok') {
+		if (isset($response['status']['@code']) && $response['status']['@code']=='ok') {
 			return true;
 		}
 		return false;
@@ -180,9 +180,9 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 			);
 		$db =& ConnectionManager::getDataSource($this->useDbConfig);
 		$response = $db->request($this, $this->request);
-		if (isset($response['Status']['code']) && $this->response['Status']['code']=="ok") {
+		if (isset($response['status']['@code']) && $this->response['status']['@code']=="ok") {
 			return true;
-		} elseif (isset($response['Status']['code']) && $this->response['Status']['code']=="no-data") {
+		} elseif (isset($response['status']['@code']) && $this->response['status']['@code']=="no-data") {
     		return true;
     	}
 		return false;
@@ -258,5 +258,3 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 	}
 
 }
-
-?>

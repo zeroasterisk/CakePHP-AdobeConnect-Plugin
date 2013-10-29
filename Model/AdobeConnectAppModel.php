@@ -1,5 +1,5 @@
 <?php
-
+App::uses('Set','Utility');
 class AdobeConnectAppModel extends AppModel {
 	
 	/**
@@ -80,24 +80,24 @@ class AdobeConnectAppModel extends AppModel {
 			if (App::import(array('type' => 'File', 'name' => 'AdobeConnect.ADOBECONNECT_CONFIG', 'file' => APP.'config'.DS.'adobe_connect_config.php'))) {
 				$ADOBECONNECT_CONFIG = new ADOBECONNECT_CONFIG();
 				if (isset($ADOBECONNECT_CONFIG->default)) {
-					$config = set::merge($config, $ADOBECONNECT_CONFIG->default);
+					$config = Set::merge($config, $ADOBECONNECT_CONFIG->default);
 				}
 				if (isset($ADOBECONNECT_CONFIG->{$this->useDbConfig})) {
-					$config = set::merge($config, $ADOBECONNECT_CONFIG->{$this->useDbConfig});
+					$config = Set::merge($config, $ADOBECONNECT_CONFIG->{$this->useDbConfig});
 				}
 			} elseif (App::import(array('type' => 'File', 'name' => 'AdobeConnect.ADOBECONNECT_CONFIG', 'file' => 'config'.DS.'adobe_connect_config.php'))) {
 				$ADOBECONNECT_CONFIG = new ADOBECONNECT_CONFIG();
 				if (isset($ADOBECONNECT_CONFIG->default)) {
-					$config = set::merge($config, $ADOBECONNECT_CONFIG->default);
+					$config = Set::merge($config, $ADOBECONNECT_CONFIG->default);
 				}
 				if (isset($ADOBECONNECT_CONFIG->{$this->useDbConfig})) {
-					$config = set::merge($config, $ADOBECONNECT_CONFIG->{$this->useDbConfig});
+					$config = Set::merge($config, $ADOBECONNECT_CONFIG->{$this->useDbConfig});
 				}
 			}
 			// Add any config from Configure class that you might have added at any
 			// point before the model is instantiated.
 			if (($configureConfig = Configure::read('AdobeConnect.config')) != false) {
-				$config = set::merge($config, $configureConfig);
+				$config = Set::merge($config, $configureConfig);
 			}
 			// double-check we have required keys
 			if (empty($config['url'])) {
@@ -126,7 +126,7 @@ class AdobeConnectAppModel extends AppModel {
 	public function config($config = array()) {
 		$db =& ConnectionManager::getDataSource($this->useDbConfig);
 		if (!empty($config) && is_array($config)) {
-			$db->config = set::merge($db->config, $config);
+			$db->config = Set::merge($db->config, $config);
 		}
 		return $db->config;
 	}
@@ -170,7 +170,7 @@ class AdobeConnectAppModel extends AppModel {
 	* Special request action... allows custom API calls to happen (make sure you've got your $data array correct) 
 	*
 	* @param array $data
-	* @param array $setExtractPath (optional, if set, it runs set::extract() on the response)
+	* @param array $setExtractPath (optional, if set, it runs Set::extract() on the response)
 	*/
 	public function request($data, $setExtractPath = null) {
 		if (is_string($data)) {
@@ -182,7 +182,7 @@ class AdobeConnectAppModel extends AppModel {
 			return false;
 		}
 		if (!isset($data['data']) && !empty($data['data'])) {
-			$data = set::merge($data, $this->parseFiltersFromQuery($data['data']));
+			$data = Set::merge($data, $this->parseFiltersFromQuery($data['data']));
 			unset($data['data']);
 		}
 		$db =& ConnectionManager::getDataSource($this->useDbConfig);
@@ -194,7 +194,7 @@ class AdobeConnectAppModel extends AppModel {
 			return false;
 		} 
 		if (is_string($setExtractPath) && !empty($setExtractPath)) {
-			return set::extract($response, $setExtractPath);
+			return Set::extract($response, $setExtractPath);
 		}
     	return $response;
 	}
@@ -206,10 +206,10 @@ class AdobeConnectAppModel extends AppModel {
 	* @param string $type
 	* @param array $options
 	*/
-	public function find($type, $options = array()) {
+	public function find($type = 'first', $options = array()) {
 		$initial = $this->request;
 		$this->request = array();
-		$options = set::merge(array('order' => null, 'recursive' => null, 'conditions' => null, 'fields' => null,), $options); 
+		$options = Set::merge(array('order' => null, 'recursive' => null, 'conditions' => null, 'fields' => null,), $options); 
 		$return = parent::find($type, $options);
 		$this->request = $initial;
 		return $return;
@@ -221,10 +221,10 @@ class AdobeConnectAppModel extends AppModel {
 	*
 	* @param int $id
 	*/
-	public function delete($id) {
+	public function delete($id = null, $cascade = true) {
 		$initial = $this->request;
 		$this->request = array();
-		$return = parent::delete($id);
+		$return = parent::delete($id, $cascade);
 		$this->request = $initial;
 		return $return;
 	}
@@ -288,7 +288,7 @@ class AdobeConnectAppModel extends AppModel {
 	/**
 	* In many cases we need to translate CakePHP $query/$findOptions to AdobeConnect Filters
 	* @param array $query
-	* @return array $request ($this->request = set::merge($this->request, $this->parseFiltersFromQuery($query)))
+	* @return array $request ($this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query)))
 	*/
 	public function parseFiltersFromQuery($query) {
 		$request = array();
@@ -382,5 +382,3 @@ class AdobeConnectAppModel extends AppModel {
 			trim($string));
 	}
 }
-
-?>

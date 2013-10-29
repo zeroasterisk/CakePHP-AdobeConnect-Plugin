@@ -15,7 +15,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 	var $rootScoIdForTesting = 10039;
 	
 	function startTest() {
-		$this->AdobeConnectSco =& ClassRegistry::init('AdobeConnectSco');
+		$this->AdobeConnectSco = ClassRegistry::init('AdobeConnectSco');
 	}
 	function endTest() {
 		if (!empty($this->deleteIds)) {

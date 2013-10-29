@@ -135,14 +135,14 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		$this->request = $data;
 		$this->request['action'] = "principal-update";
 		$result = parent::save(array($this->alias => $data), $validate, $fieldList);
-		if (isset($this->response['Status']['Invalid'])) {
-			$this->errors[] = $error = "{$this->alias}::Save: Invalid Fields: ".json_encode($this->response['Status']['Invalid']);
+		if (isset($this->response['status']['invalid'])) {
+			$this->errors[] = $error = "{$this->alias}::Save: Invalid Fields: ".json_encode($this->response['status']['invalid']);
 			trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
 			$this->request = $initial;
 			return false;
 		}
-		if (isset($this->response['Principal'][$this->primaryKey])) {
-			$this->id = $this->response['Principal'][$this->primaryKey];
+		if (isset($this->response['principal'][$this->primaryKey])) {
+			$this->id = $this->response['principal'][$this->primaryKey];
 			$result[$this->alias][$this->primaryKey] = $this->id;
 		}
 		if (isset($this->response[$this->alias][$this->primaryKey])) {
@@ -229,7 +229,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		if (!empty($response)) {
 			return true;
 		}
-		if (isset($this->response['Status']['code']) && $this->response['Status']['code']=="no-data") {
+		if (isset($this->response['status']['@code']) && $this->response['status']['@code']=="no-data") {
     		return true;
     	}
 		return false;
@@ -265,11 +265,11 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 			return $query;
 		} else {
 			$unformatted = array();
-			if (isset($results['Contact'])) {
-				$unformatted = array_merge($unformatted, $results['Contact']);
+			if (isset($results['contact'])) {
+				$unformatted = array_merge($unformatted, $results['contact']);
 			}
-			if (isset($results['Principal'])) {
-				$unformatted = array_merge($unformatted, $results['Principal']);
+			if (isset($results['principal'])) {
+				$unformatted = array_merge($unformatted, $results['principal']);
 			}
 			if (!empty($unformatted)) {
 				return array($this->alias => $unformatted);
@@ -289,11 +289,11 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		if ($state == 'before') {
 			$this->request["action"] = "principal-list";
 			$this->request["method"] = "get";
-			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
+			$this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query));
 			$query = $this->_paginationParams($query);
 			return $query;
 		} else {
-			$unformatted = set::extract($results, "/Principal-list/Principal/.");
+			$unformatted = Set::extract($results, "/principal-list/principal/.");
 			$results = array();
 			foreach ( $unformatted as $node ) {
 				$results[] = array($this->alias => $node);
@@ -324,5 +324,3 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	}
 
 }
-
-?>

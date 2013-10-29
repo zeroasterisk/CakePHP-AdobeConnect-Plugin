@@ -132,14 +132,14 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		$this->request = $data;
 		$this->request['action'] = "sco-update";
 		$result = parent::save(array($this->alias => $data), $validate, $fieldList);
-		if (isset($this->response['Status']['Invalid'])) {
-			$this->errors[] = $error = "{$this->alias}::Save: Invalid Fields: ".json_encode($this->response['Status']['Invalid']);
+		if (isset($this->response['status']['invalid'])) {
+			$this->errors[] = $error = "{$this->alias}::Save: Invalid Fields: ".json_encode($this->response['status']['invalid']);
 			trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
 			$this->request = $initial;
 			return false;
 		}
-		if (isset($this->response['Sco'][$this->primaryKey])) {
-			$this->id = $this->response['Sco'][$this->primaryKey];
+		if (isset($this->response['sco'][$this->primaryKey])) {
+			$this->id = $this->response['sco'][$this->primaryKey];
 			$result[$this->alias][$this->primaryKey] = $this->id;
 		}
 		if (isset($this->response[$this->alias][$this->primaryKey])) {
@@ -163,7 +163,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	* Ovverwrite of the exists() function, to facilitate saves
 	* (assume this is called within the save() function, so existance has already been established)
 	*/
-	public function exists() {
+	public function exists($id = null) {
 		if (isset($this->data[$this->primaryKey]) && !empty($this->data[$this->primaryKey])) {
 			return true;
 		}
@@ -203,7 +203,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	* @param boolean $id
 	* @return bool
 	*/
-	public function delete($id = 0) {
+	public function delete($id = 0, $cascade = true) {
 		if (empty($id)) {
 			$id = $this->id;
 		}
@@ -217,7 +217,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		if (!empty($response)) {
 			return true;
 		}
-		if (isset($this->response['Status']['code']) && $this->response['Status']['code']=="no-data") {
+		if (isset($this->response['status']['@code']) && $this->response['status']['@code']=="no-data") {
     		return true;
     	}
 		return false;
@@ -240,7 +240,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		if (!empty($response)) {
 			return true;
 		}
-		if (isset($this->response['Status']['code']) && $this->response['Status']['code']=="no-data") {
+		if (isset($this->response['status']['@code']) && $this->response['status']['@code']=="no-data") {
     		return true;
     	}
 		return false;
@@ -271,12 +271,12 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 				return false;
 			}
 			$this->request['sco-id'] = $id;
-			$query = set::merge(array('order' => null, 'recursive' => null, 'conditions' => null, 'fields' => null,), $query);
+			$query = Set::merge(array('order' => null, 'recursive' => null, 'conditions' => null, 'fields' => null,), $query);
 			$query = $this->_paginationParams($query);
 			return $query;
 		} else {
-			if (isset($results['Sco'])) {
-				$return =  array($this->alias => $results['Sco']);
+			if (isset($results['sco'])) {
+				$return =  array($this->alias => $results['sco']);
 				if (isset($query['recursive']) && $query['recursive'] > -1 && in_array($return[$this->alias]['type'], $this->typesWithChildren)) {
 					$children = $this->find("contents", $return[$this->alias][$this->primaryKey]);
 					$return['Contents'] = array();
@@ -323,12 +323,12 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			} else {
 				die("Error: ".__function__." you must specify a search term... either as simple string for name, or as the first key => value of the conditions array");
 			}
-			$query = set::merge(array('recursive' => 0, 'order' => 'date-modified desc'), $query);
-			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
+			$query = Set::merge(array('recursive' => 0, 'order' => 'date-modified desc'), $query);
+			$this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query));
 			$query = $this->_paginationParams($query);
 			return $query;
 		} else {
-			$unformatted = set::extract($results, "/Sco-search-by-field-info/Sco/.");
+			$unformatted = Set::extract($results, "/sco-search-by-field-info/sco/.");
 			$results = array();
 			foreach ( $unformatted as $node ) {
 				if (isset($query['recursive']) && $query['recursive'] > -1 && in_array($return[$this->alias]['type'], $this->typesWithChildren)) {
@@ -387,11 +387,11 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 				die("ERROR: you must include a value for to find('contents', \$options['sco-id'])");
 			}
 			$query['conditions']['sco-id not'] = $this->request["sco-id"];
-			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
+			$this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query));
 			$query = $this->_paginationParams($query);
 			return $query;
 		} else {
-			$unformatted = set::extract($results, "/Expanded-scos/Sco/.");
+			$unformatted = Set::extract($results, "/expanded-scos/sco/.");
 			$results = array();
 			foreach ( $unformatted as $node ) {
 				$results[] = array($this->alias => $node);
@@ -424,11 +424,11 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			if (!isset($this->request["sco-id"]) || empty($this->request["sco-id"])) {
 				die("ERROR: you must include a value for to find('contents', \$options['sco-id'])");
 			}
-			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
+			$this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query));
 			$query = $this->_paginationParams($query);
 			return $query;
 		} else {
-			$unformatted = set::extract($results, "/Scos/Sco/.");
+			$unformatted = Set::extract($results, "/scos/sco/.");
 			$results = array();
 			foreach ( $unformatted as $node ) {
 				$results[] = array($this->alias => $node);
@@ -462,12 +462,12 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			if (!isset($this->request["query"]) || empty($this->request["query"])) {
 				die("ERROR: you must include a value for to find('search', \$options['query'])");
 			}
-			$query = set::merge(array('recursive' => 0, 'order' => 'date-modified desc'), $query);
-			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
+			$query = Set::merge(array('recursive' => 0, 'order' => 'date-modified desc'), $query);
+			$this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query));
 			$query = $this->_paginationParams($query);
 			return $query;
 		} else {
-			$unformatted = set::extract($results, "/Sco-search-info/Sco/.");
+			$unformatted = Set::extract($results, "/sco-search-info/sco/.");
 			$results = array();
 			foreach ( $unformatted as $node ) {
 				$results[] = array($this->alias => $node);
@@ -526,5 +526,3 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		return $return;
 	}
 }
-
-?>

@@ -64,9 +64,9 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			$this->request = array("action" => "report-active-meetings");
 			return $query;
 		} else {
-			$return = set::extract($results, "/Report-active-meetings/Sco/.");
+			$return = Set::extract($results, "/report-active-meetings/sco/.");
 			if (empty($return)) {
-				$return = set::extract($this->response, "/Report-active-meetings/Sco/.");
+				$return = Set::extract($this->response, "/report-active-meetings/sco/.");
 			}
 			return $return;
 		}
@@ -103,12 +103,12 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			if (empty($query['limit'])) {
 				$query['limit'] = 100;
 			}
-			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
+			$this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query));
 			return $query;
 		} else {
-			$return = set::extract($results, "/Report-bulk-consolidated-transactions/Row/.");
+			$return = Set::extract($results, "/report-bulk-consolidated-transactions/row/.");
 			if (empty($return)) {
-				$return = set::extract($this->response, "/Report-bulk-consolidated-transactions/Row/.");
+				$return = Set::extract($this->response, "/report-bulk-consolidated-transactions/row/.");
 			}
 			return $return;
 		}
@@ -139,12 +139,12 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			if (!isset($this->request["sco-id"]) || empty($this->request["sco-id"])) {
 				die("ERROR: you must include a value for to find('coursestatus', \$options['sco-id'])");
 			}
-			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
+			$this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query));
 			return $query;
 		} else {
-			$return = set::extract($results, "/Report-course-status/.");
+			$return = Set::extract($results, "/report-course-status/.");
 			if (empty($return)) {
-				$return = set::extract($this->response, "/Report-course-status/.");
+				$return = Set::extract($this->response, "/report-course-status/.");
 			}
 			return $return;
 		}
@@ -175,13 +175,13 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			if (!isset($this->request["sco-id"]) || empty($this->request["sco-id"])) {
 				die("ERROR: you must include a value for to find('meetingattendance', \$options['sco-id'])");
 			}
-			$this->request = set::merge($this->request, $this->parseFiltersFromQuery($query));
+			$this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query));
 			$query = $this->_paginationParams($query);
 			return $query;
 		} else {
-			$return = set::extract($results, "/Report-meeting-attendance/Row/.");
+			$return = Set::extract($results, "/report-meeting-attendance/row/.");
 			if (empty($return)) {
-				$return = set::extract($this->response, "/Report-meeting-attendance/Row/.");
+				$return = Set::extract($this->response, "/report-meeting-attendance/row/.");
 			}
 			return $return;
 		}
@@ -206,9 +206,9 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			}
 			return $query;
 		} else {
-			$return = set::extract($results, "/Report-meeting-concurrent-users/.");
+			$return = Set::extract($results, "/report-meeting-concurrent-users/.");
 			if (empty($return)) {
-				$return = set::extract($this->response, "/Report-meeting-concurrent-users/.");
+				$return = Set::extract($this->response, "/report-meeting-concurrent-users/.");
 			}
 			if (isset($return[0])) {
 				return $return[0];
@@ -217,5 +217,3 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 		}
 	}
 }
-
-?>
