@@ -3,6 +3,13 @@ App::uses('Set', 'Utility');
 App::uses('HttpSocket', 'Network/Http');
 App::uses('Xml', 'Utility');
 App::uses('DataSource', 'Model/Datasource');
+
+/**
+* AdobeConnectException Class
+*/
+class AdobeConnectException extends Exception {
+}
+
 /**
 * CakePHP base datasource used by all AdobeConnect service data sources
 *
@@ -51,20 +58,6 @@ class AdobeConnectSource extends DataSource {
 			'default-folder' => "10011",
 			'default-template' => "25178",
 			)
-		);
-	
-	
-	/**
-	* placeholder for users logged in with the API
-	* @var array
-	*/
-	protected $users = array(
-		'userKey' => array(
-			'username' => null,
-			'password' => null,
-			'sessionKey' => null,
-			'isLoggedIn' => false,
-			),
 		);
 	
 	/**
@@ -311,7 +304,7 @@ class AdobeConnectSource extends DataSource {
 		foreach( array('series_id', 'course_id', 'event_id', 'member_id') as $key) {
 			$this->$key = 0;
 		}
-		$this->users = array();
+		$this->stashed = array();
 		$this->config['autoreset'] = false;
 		$this->config['autologin'] = false;
 		if ($this->config['cacheEngine']) {
@@ -344,39 +337,11 @@ class AdobeConnectSource extends DataSource {
 	}
 	
 	/**
-	* Adds in common elements to the request such as AdobeConnect version and Developer
-	* key headers and the config parameters if not set in the request already
-	*
-	* @param AppModel $model The model the operation is called on. Should have a request property in the format described in HttpSocket::request
-	* @return mixed Depending on what is returned from HttpSocket::request()
+	* Cleaning the data passed into request
+	* @param array of data
+	* @return array of data.
 	*/
-	public function request($model, $data = array(), $requestOptions = array()) {
-		if (!is_array($data)) { $data = array(); }
-		if (!is_array($requestOptions)) { $requestOptions = array(); }
-		if (isset($model->request) && is_array($model->request)) {
-			$data = Set::merge($model->request, $data);
-		}
-		if (isset($model->requestOptions)) {
-			$requestOptions = Set::merge($model->requestOptions);
-		}
-		$data = Set::merge(array(
-			'method' => (count($data) > 6 ? 'post' : 'get'),
-			'action' => 'unknown',
-			), $data);
-		extract($data);
-		$errors = array();
-		if ($data['action'] == "unknown") {
-			$this->errors[] = $error = "{$model->alias}::request: missing action: ".json_encode($data);
-			trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
-			return false;
-		}
-		if ($data['action'] != "common-info") {
-			$data['session'] = $this->getSessionKey($this->userKey);
-			if (empty($data['session']) && !empty($this->users[$this->userKey]['sessionKey'])) {
-				$data['session'] = $this->users[$this->userKey]['sessionKey'];
-			}
-		}
-		// clean data for request
+	private function __requestPassableData($data) {
 		foreach ( $data as $key => $val ) { 
 			if (in_array($key, $this->keysDataRestricted)) {
 				unset($data[$key]);
@@ -388,7 +353,57 @@ class AdobeConnectSource extends DataSource {
 				unset($data[$key]);
 			}
 		}
+		return $data;
+	}
+	
+	/**
+	* Adds in common elements to the request such as AdobeConnect version and Developer
+	* key headers and the config parameters if not set in the request already
+	*
+	* @param AppModel $model The model the operation is called on. Should have a request property in the format described in HttpSocket::request
+	* @return mixed Depending on what is returned from HttpSocket::request()
+	*/
+	public function request($model_or_null, $data = array(), $requestOptions = array()) {
+		if (!is_array($data)) { $data = array(); }
+		if (!is_array($requestOptions)) { $requestOptions = array(); }
+		$alias = 'AdobeConnectSource';
+		$Model = false;
+		//Verify that model_or_null is a model.
+		if (is_object($model_or_null) && is_subclass_of($model_or_null, 'Model')) {
+			$Model = $model_or_null;
+			$alias = $Model->alias;
+			if (isset($Model->request) && is_array($Model->request)) {
+				$data = Set::merge($Model->request, $data);
+			}
+			if (isset($Model->requestOptions)) {
+				$requestOptions = Set::merge($Model->requestOptions);
+			}
+		}
+
+		$data = Set::merge(array(
+			'method' => (count($data) > 6 ? 'post' : 'get'),
+			'action' => 'unknown',
+		), $data);
+
+		$errors = array();
+		if ($data['action'] == "unknown") {
+			$this->errors[] = $error = "$alias::request: missing action: ".json_encode($data);
+			trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
+			return false;
+		}
+		if ($data['action'] != "common-info") {
+			$data['session'] = $this->getSessionKey($this->userKey);
+			if (empty($data['session'])) {
+				$text = 'Unable to retrieve sessionKey. Check.';
+				$text .= implode("\n", $this->errors);
+				throw new AdobeConnectException($text);
+			}
+		}
+		//Scrub the data so it's ready for request.
+		$data = $this->__requestPassableData($data);
+		//dataCleaned is what isn't model specific data
 		$dataCleaned = array_diff_key($data, $this->keysDataCleanRestricted);
+		
 		// setup request
 		$requestOptions = Set::merge(array(
 			'header' => array(
@@ -409,15 +424,13 @@ class AdobeConnectSource extends DataSource {
 			$dataAsXML = implode("\n", $dataAsXMLArray);
 			$response = $this->HttpSocket->request(Set::merge(array(
 				'method' => strtoupper($method),
-				'uri' => $this->config['url'].'?action='.$action.'&session='.$data['session'],
+				'uri' => $this->config['url'].'?action='.$data['action'].'&session='.$data['session'],
 				'body' => $dataAsXML,
 			), $requestOptions));
 		} else {
 			$response = $this->HttpSocket->get($this->config['url'], $dataCleaned, $requestOptions);
-			$url = trim(str_replace(array('GET', 'HTTP/1.1'), '', $this->HttpSocket->request['line']));
-			$url = $this->HttpSocket->request['uri']['scheme'].'://'.$this->HttpSocket->request['uri']['host'].$url;
 		}
-		//debug($response);
+		
 		# parse response
 		$responseArray = $this->__parseResult($response);
 		# extract status
@@ -430,7 +443,7 @@ class AdobeConnectSource extends DataSource {
 			if (isset($responseArray['status']['@subcode']) && $responseArray['status']['@subcode']=="no-login" && !$this->autoFailedSession) {
 				$this->autoFailedSession = true;
 				$this->reset("No Login after action - automatic reset and re-attempt");
-				return $this->request($model, $data, $requestOptions);
+				return $this->request($model_or_null, $data, $requestOptions);
 			}
 			# general errors
 			$invalid = Set::extract($responseArray, "/status/invalid");
@@ -450,21 +463,25 @@ class AdobeConnectSource extends DataSource {
 			}
 		}
 		# log request
-		if (!$this->log(compact('url', 'action', 'data', 'dataCleaned', 'dataAsXML', 'responseArray', 'response', 'errors'))) {
+		$log = array(
+			'action' => $data['action'],
+			'url' => $this->config['url'],
+		);
+		if (!$this->log(array_merge($log, compact('data', 'dataCleaned', 'dataAsXML', 'responseArray', 'response', 'errors')))) {
 			$errors[] = 'Unable to save log';
 		}
 		# flesh out logged errors
 		if (!empty($errors)) {
 			$this->lastError = implode(' | ', $errors);
 			$errors[] = array('log' => current($this->log));
-			array_unshift($errors, "Errors with Action: [{$action}]");
+			array_unshift($errors, "Errors with Action: [{$data['action']}]");
 			$this->errors[] = $errors;
 		}
 		# add response/log/errors to model object, if exists
-		if (is_object($model)) {
-			$model->response = $responseArray;
-			$model->log = $this->log;
-			$model->errors = $this->errors;
+		if ($Model) {
+			$Model->response = $responseArray;
+			$Model->log = $this->log;
+			$Model->errors = $this->errors;
 		}
 		# return
 		if ($good) {
@@ -573,30 +590,15 @@ class AdobeConnectSource extends DataSource {
 		}
 		return $userData['sessionKey'];
 	}
-	
-	/**
-	* Simple Login functionality 
-	* NOTE: if you want to initialize a new sessionKey, use initUser() instead of login()
-	* @param string $user
-	* @param string $pass
-	* @return bool $loggedIn
-	*/
-	public function login($user=null, $pass=null) {
-		$loggedIn = $this->request("login", array('login' => $user, 'password' => $pass, ));
-		if (!empty($loggedIn)) {
-			return true;
-		}
-		return false;
-	}
-	
+
 	/**
 	* Sets method = POST in request if not already set
 	* @param AppModel $model
 	* @param array $fields Unused
 	* @param array $values Unused
 	*/
-	public function create(Model $model, $fields = null, $values = null) {
-		return $this->request($model);
+	public function create(Model $Model, $fields = null, $values = null) {
+		return $this->request($Model);
 	}
 	
 	/**
@@ -604,8 +606,8 @@ class AdobeConnectSource extends DataSource {
 	* @param AppModel $model
 	* @param array $queryData Unused
 	*/
-	public function read(Model $model, $queryData = array(), $recursive = null) {
-		return $this->request($model, $queryData);
+	public function read(Model $Model, $queryData = array(), $recursive = null) {
+		return $this->request($Model, $queryData);
 	}
 	
 	/**
@@ -615,8 +617,8 @@ class AdobeConnectSource extends DataSource {
 	* @param array $fields Unused
 	* @param array $values Unused
 	*/
-	public function update(Model $model, $fields = null, $values = null, $conditions = null) {
-		return $this->request($model);
+	public function update(Model $Model, $fields = null, $values = null, $conditions = null) {
+		return $this->request($Model);
 	}
 	
 	/**
@@ -655,6 +657,7 @@ class AdobeConnectSource extends DataSource {
 		if (empty($userKey)) {
 			$userKey = $this->config['apiUserKey'];
 		}
+		$this->userKey = $userKey;
 		//Shortcut to stashed if we aren't passing any new data
 		if (empty($data) && $this->isStashed($userKey)) {
 			return $this->stashed($userKey);
