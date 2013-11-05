@@ -423,7 +423,7 @@ class AdobeConnectSource extends DataSource {
 			$dataAsXMLArray[] = '</params>';
 			$dataAsXML = implode("\n", $dataAsXMLArray);
 			$response = $this->HttpSocket->request(Set::merge(array(
-				'method' => strtoupper($method),
+				'method' => strtoupper($data['method']),
 				'uri' => $this->config['url'].'?action='.$data['action'].'&session='.$data['session'],
 				'body' => $dataAsXML,
 			), $requestOptions));
