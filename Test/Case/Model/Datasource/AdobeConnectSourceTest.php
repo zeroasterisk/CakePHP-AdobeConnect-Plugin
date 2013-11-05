@@ -11,8 +11,8 @@ class AdobeConnectSourceTest extends CakeTestCase {
 		'username' => 'admin@audiologyonline.com',
 		'password' => '~br33z3!',
 		'salt' => 'connectSALT$$$',
-		'url' => 'http://dev9.connect.audiologyonline.com/api/xml',
-		'cacheEngine' => 'fast',
+		'url' => 'http://dev.connect.audiologyonline.com/api/xml',
+		'cacheEngine' => 'default',
 		'loginPrefix' => 'HIJACKED_temp_',
 		'sco-ids' => array(
 			'root' => "10000",
@@ -32,11 +32,42 @@ class AdobeConnectSourceTest extends CakeTestCase {
 		parent::setUp();
 		$this->Connect = new AdobeConnectSource($this->config);
 		$this->ConnectApiLog = ClassRegistry::init('ConnectApiLog');
-		$this->Connect->HttpSocket = $this->getMock('HttpSocket');
+		//$this->Connect->HttpSocket = $this->getMock('HttpSocket');
 		$this->Model = ClassRegistry::init('AdobeConnect.AdobeConnectSco');
 	}
 	
+	function test_getSessionLogin() {
+		$result = $this->Connect->getSessionLogin(null, true);
+		$this->assertTrue(!empty($result));
+		
+		$userData = $this->Connect->userConfig();
+		$this->assertEqual($result, $userData);
+		$this->assertTrue(!empty($result['sessionKey']));
+		$this->assertTrue($userData['isLoggedIn']);
+	}
+	
+	function test_getSessionCookie() {
+		$result = $this->Connect->getSessionCookie();
+		$this->assertTrue(!empty($result));
+		
+		//Test that we return false and errors.
+		$this->Connect->config['url'] = 'broken';
+		$this->assertEqual(0, count($this->Connect->errors));
+		$result = $this->Connect->getSessionCookie();
+		$this->assertEqual(2, count($this->Connect->errors));
+		$this->assertFalse($result);
+	}
+	
+	function test_getSessionKey() {
+		$result = $this->Connect->getSessionKey();
+		$this->assertTrue(!empty($result));
+		$userData = $this->Connect->userConfig();
+		$this->assertEqual($result, $userData['sessionKey']);
+		$this->assertTrue($userData['isLoggedIn']);
+	}
+	
 	private function setHttpResponse($xml = '', $method = 'get'){
+		$this->Connect->HttpSocket = $this->getMock('HttpSocket');
 		$return = new Object();
 		$return->body = $xml;
 		return $this->Connect->HttpSocket->expects($this->any())->method($method)->will($this->returnValue($return));
@@ -74,6 +105,7 @@ class AdobeConnectSourceTest extends CakeTestCase {
 	}
 	
 	function testRequestInvalid() {
+		$this->Connect->HttpSocket = $this->getMock('HttpSocket');
 		$data = array(
 			'action' => 'common-info'
 		);

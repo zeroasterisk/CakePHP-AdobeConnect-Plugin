@@ -13,6 +13,11 @@ App::uses('DataSource', 'Model/Datasource');
 */
 class AdobeConnectSource extends DataSource {
 	protected $_schema = array();
+	
+	/**
+	* Access through $this->stashed, $this->stash, and $this->isStashed
+	*/
+	protected $stashed = array();
 	/**
 	* Default config
 	* @var array
@@ -326,11 +331,16 @@ class AdobeConnectSource extends DataSource {
 	/**
 	* Parse the result of API call
 	* @param returning xml result
-	* @return deep result of query
+	* @return mixed deep result of query or false if unable to parse 
 	*/
 	function __parseResult($result){
-		$result = Xml::toArray(Xml::build($result->body));
-		return $result;
+		try {
+			$result = Xml::toArray(Xml::build($result->body));
+			return $result;
+		} catch (XmlException $e) {
+			$this->errors[] = $e->getMessage();
+		}
+		return false;
 	}
 	
 	/**
@@ -361,7 +371,7 @@ class AdobeConnectSource extends DataSource {
 			return false;
 		}
 		if ($data['action'] != "common-info") {
-			$data['session'] = $this->getSessionKey($data, $this->userKey);
+			$data['session'] = $this->getSessionKey($this->userKey);
 			if (empty($data['session']) && !empty($this->users[$this->userKey]['sessionKey'])) {
 				$data['session'] = $this->users[$this->userKey]['sessionKey'];
 			}
@@ -490,82 +500,78 @@ class AdobeConnectSource extends DataSource {
 		}
 		return true;
 	}
+
+	/**
+	* Getting the Session Cookie
+	* @return mixed string cookie or false if unable to retrieve cookie
+	*/
+	public function getSessionCookie() {
+		$response = $this->request(null, array('action' => "common-info"));
+		if (!empty($response['common']['cookie'])) {
+			return $response['common']['cookie'];
+		}
+		$this->errors[] = "Unable to get sessionKey"; 
+		return false;
+	}
+	
+	/**
+	* get the CacheKey.
+	* @param string userKey (optional, apiUserKey by default)
+	* @return string cacheKey
+	*/
+	public function getCacheKey($userKey = null) {
+		if (empty($this->config['cacheEngine'])) {
+			return false;
+		}
+		$userData = $this->userConfig($userKey);
+		return 'adobe_connect_session_'.strtolower($userData['userKey']);
+	}
+	/**
+	* get the user session login
+	* @param string userKey
+	* @param boolean force a refresh from the API (default false)
+	* @return mixed userData of logged in user or false if failure
+	*/
+	public function getSessionLogin($userKey = null) {
+		$userData = $this->userConfig($userKey);
+		if (empty($userData['sessionKey'])) {
+			$userData['sessionKey'] = $this->getSessionCookie();
+			$this->userConfig($userKey, $userData);
+		}
+		$response = $this->request(null, array(
+			'action' => "login", 
+			'login' => $userData['username'], 
+			'password' => $userData['password']
+		));
+		if (isset($response['status']['@code']) && $response['status']['@code'] == "ok") {
+			//Mark user as logged in.
+			$userData['isLoggedIn'] = true;
+			return $this->userConfig($userKey, $userData);
+		}
+		return false;
+	}
 	
 	/**
 	* Simple function to return an activated sessionKey 
-	* NOTE: if you want to initialize a new sessionKey, use initUser() or reset() and then this function
-	* @param array $data (optional)
-	* @param string $userKey (optional)
-	* @param string $username (optional)
-	* @param string $password (optional)
-	* @return string $sessionKey
+	* @param string userKey
+	* @param boolean force a refresh from the API (default false)
+	* @return mixed string $sessionKey or false if failure
 	*/
-	public function getSessionKey($data, $userKey=null, $username=null, $password=null) {
-		if (empty($userKey)) {
-			$userKey = $this->config['apiUserKey'];
+	public function getSessionKey($userKey = null, $refresh = false) {
+		$cacheKey = $this->getCacheKey($userKey);
+		if ($cacheKey && !$refresh && $userData = Cache::read($cacheKey, $this->config['cacheEngine'])) {
+			$this->userConfig($userKey, $userData);
+			return $userData['sessionKey'];
 		}
-		$this->userKey = $userKey;
-		if (!isset($this->users[$this->userKey]['sessionKey'])) {
-			if (empty($username) && $this->userKey == $this->config['apiUserKey']) {
-				$username = $this->config['username'];
-			}
-			if (empty($password) && $this->userKey == $this->config['apiUserKey']) {
-				$password = $this->config['password'];
-			}
-			$this->users[$this->userKey] = array(
-				'principle-id' => null,
-				'username' => $username,
-				'password' => $password,
-				'sessionKey' => null,
-				'isLoggedIn' => false,
-				);
+		$userData = $this->getSessionLogin($userKey);
+		if (!$userData) {
+			$this->errors[] = 'Unable to login.';
+			return false;
 		}
-		// return if we've got values
-		if (!empty($this->users[$this->userKey]['sessionKey']) && !empty($this->users[$this->userKey]['isLoggedIn'])) {
-			return $this->users[$this->userKey]['sessionKey'];
-		} elseif (!empty($this->users[$this->userKey]['sessionKey']) && $data['action'] == "login") {
-			return $this->users[$this->userKey]['sessionKey'];
+		if ($cacheKey) {
+			Cache::write($cacheKey, $userData, $this->config['cacheEngine']);
 		}
-		// check in with the cache, if we have cache (if autoFailed, we ignore cache)
-		$cacheKey = false;
-		if ($this->config['cacheEngine'] && $this->userKey == $this->config['apiUserKey']) {
-			$cacheKey = 'adobe_connect_session_'.date('h').strtolower($this->userKey);
-		}
-		if ($cacheKey && empty($this->users[$this->userKey]['sessionKey']) && !$this->autoFailedSession) {
-			$cachedUserData = Cache::read($cacheKey, $this->config['cacheEngine']);
-			if (!empty($cachedUserData)) {
-				$this->users[$this->userKey] = $cachedUserData;
-			}
-		}
-		// return if we've got values
-		if (!empty($this->users[$this->userKey]['sessionKey']) && !empty($this->users[$this->userKey]['isLoggedIn'])) {
-			return $this->users[$this->userKey]['sessionKey'];
-		} elseif (!empty($this->users[$this->userKey]['sessionKey']) && $data['action'] == "login") {
-			return $this->users[$this->userKey]['sessionKey'];
-		}
-		// get values
-		if (empty($this->users[$this->userKey]['sessionKey'])) {
-			// no session, create it
-			$response = $this->request($this->userKey, array('action' => "common-info"));
-			if (isset($response['Common']['cookie'])) {
-				$this->users[$this->userKey]['sessionKey'] = $response['Common']['cookie'];
-			} else {
-				$this->errors[] = "Unable to get sessionKey"; 
-				return false;
-			}
-		}
-		if (empty($this->users[$this->userKey]['isLoggedIn']) && $data['action'] != "login") {
-			// has a session, but we need to login user
-			$response = $this->request($this->userKey, array('action' => "login", 'login' => $this->users[$this->userKey]['username'], 'password' => $this->users[$this->userKey]['password']));
-			if (isset($response['status']['@code']) && $response['status']['@code'] == "ok") {
-				$this->users[$this->userKey]['isLoggedIn'] = true;
-				if ($cacheKey) {
-					Cache::write($cacheKey, $this->users[$this->userKey], $this->config['cacheEngine']);
-				}
-				return $this->users[$this->userKey]['sessionKey'];
-			}
-		}
-		return false;
+		return $userData['sessionKey'];
 	}
 	
 	/**
@@ -626,5 +632,67 @@ class AdobeConnectSource extends DataSource {
 	}
 	public function describe($model) {
 		return $this->_schema['tweets'];
+	}
+	
+	/**
+	* Is something stashed?
+	*
+	* @param string $key
+	* @return boolean
+	*/
+	public function isStashed($key = null) {
+		return array_key_exists($key, $this->stashed);
+	}
+	
+	/**
+	* userConfig will return the userconfig of either a passed in data user or the default apiUser
+	* getting and setting user config
+	* @param string userKey
+	* @param array data of settables to user
+	* @return array of user data
+	*/
+	public function userConfig($userKey = null, $data = array()) {
+		if (empty($userKey)) {
+			$userKey = $this->config['apiUserKey'];
+		}
+		//Shortcut to stashed if we aren't passing any new data
+		if (empty($data) && $this->isStashed($userKey)) {
+			return $this->stashed($userKey);
+		}
+		//Defaults
+		$data = array_merge(array(
+			'principle-id' => null,
+			'username' => $this->config['username'],
+			'password' => $this->config['password'],
+			'sessionKey' => null,
+			'isLoggedIn' => false,
+			'userKey' => $userKey,
+		), (array) $data);
+		
+		if ($this->isStashed($userKey)) {
+			$data = array_merge($this->stashed($userKey), (array) $data);
+		}
+		return $this->stash($userKey, $data);
+	}
+	
+	/**
+	* Get something from the stash
+	*
+	* @param string $key
+	* @return mixed $value
+	*/
+	public function stashed($key) {
+		return $this->stashed[$key];
+	}
+	
+	/**
+	* Stash something for future use (and return the value)
+	*
+	* @param string $key
+	* @param mixed $value
+	* @return mixed $value
+	*/
+	public function stash($key, $value) {
+		return $this->stashed[$key] = $value;
 	}
 }

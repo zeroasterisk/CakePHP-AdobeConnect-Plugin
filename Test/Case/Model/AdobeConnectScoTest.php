@@ -36,6 +36,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 		ClassRegistry::flush();
 	}
 	public function test_read(){
+		debug($this->AdobeConnectSco);
 		// this is a "test" SCO which should exist on Adobe Connect
 		//   if not, cusotmize this SCO to something which does exist.
 		$parent_sco_id = '11637';
