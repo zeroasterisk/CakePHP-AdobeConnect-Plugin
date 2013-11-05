@@ -11,12 +11,19 @@
 * @copyright (c) 2011 Alan Blount
 * @license MIT License - http://www.opensource.org/licenses/mit-license.php
 */
+App::uses('AdobeConnectAppModel', 'AdobeConnect.Model');
 class AdobeConnectSco extends AdobeConnectAppModel {
 
 	/**
 	* The name of this model
 	* @var name
 	*/
+
+	/**
+	* The models in the plugin get data from the web service, so they don't need a table.
+	* @var string
+	*/
+	public $useTable = false;
 
 	/**
 	* default value of "send-email" for the welcome email on new-user-create
@@ -66,7 +73,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	* The custom find methods (defined below)
 	* @var array
 	*/
-	public $_findMethods = array(
+	public $findMethods = array(
 		'search' => true,
 		'contents' => true,
 		'contents_recursive' => true,

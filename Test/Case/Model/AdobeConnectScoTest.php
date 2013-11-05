@@ -5,36 +5,48 @@
 *
 * If you don't want to create Scos, don't run this test.
 *
-* NOTE: you should define the $rootScoIdForTesting as the folder you want to create your test content into 
+* NOTE: you should define the $rootScoIdForTesting as the folder you want to create your test content into
 */
 
-App::import('model', 'AdobeConnect.AdobeConnectSco');
-
+App::uses('AdobeConnectAppModel', 'AdobeConnect.Model');
+App::uses('AdobeConnectSco', 'AdobeConnect.Model');
+App::uses('Set', 'Utility');
 class AdobeConnectScoTest extends CakeTestCase {
+	public $plugin = 'app';
+	public $fixtures = array(
+		'plugin.adobe_connect.connect_api_log',
+	);
+	protected $_testsToRun = array();
+
 	public $deleteIds = array();
 	public $rootScoIdForTesting = 10039;
-	
-	function startTest() {
-		$this->AdobeConnectSco = ClassRegistry::init('AdobeConnectSco');
+
+	public function startTest($method) {
+		parent::startTest($method);
+		$this->AdobeConnectSco = ClassRegistry::init('AdobeConnect.AdobeConnectSco');
 	}
-	function endTest() {
+	public function endTest($method) {
+		parent::endTest($method);
 		if (!empty($this->deleteIds)) {
-			foreach ( $this->deleteIds as $id ) { 
-				$this->AdobeConnectSco->delete($id); 
+			foreach ( $this->deleteIds as $id ) {
+				$this->AdobeConnectSco->delete($id);
 			}
 		}
 		unset($this->AdobeConnectSco);
 		ClassRegistry::flush();
 	}
-	function test_read(){
+	public function test_read(){
+		// this is a "test" SCO which should exist on Adobe Connect
+		//   if not, cusotmize this SCO to something which does exist.
 		$parent_sco_id = '11637';
 		$parentScoInfo = $this->AdobeConnectSco->read(null, $parent_sco_id);
+		$this->assertFalse(empty($parentScoInfo['AdobeConnectSco']['sco-id']));
 		$this->assertEqual('11637', $parentScoInfo['AdobeConnectSco']['sco-id']);
 	}
-	function testBasics() {
+	public function testBasics() {
 		$this->assertTrue(is_object($this->AdobeConnectSco));
 	}
-	function testCreateAndUpdateSco() {
+	public function testCreateAndUpdateSco() {
 		$name = 'testmeeting_'.time().__function__;
 		$Sco = $ScoOrig = array(
 			'folder-id' => $this->rootScoIdForTesting,
@@ -84,7 +96,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 		$this->assertIdentical(strtotime($Sco['date']), strtotime($read[$this->AdobeConnectSco->alias]['date-begin']));
 		$this->assertIdentical(strtotime($Sco['date'])+3600, strtotime($read[$this->AdobeConnectSco->alias]['date-end']));
 	}
-	function testDeleteSco() {
+	public function testDeleteSco() {
 		$name = 'testmeeting_'.time().__function__;
 		$Sco = array(
 			'folder-id' => $this->rootScoIdForTesting,
@@ -103,7 +115,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 		$read = $this->AdobeConnectSco->read(null, $scoId);
 		$this->assertTrue(empty($read));
 	}
-	function testFindReadSco() {
+	public function testFindReadSco() {
 		$name = 'testmeeting_'.time().__function__;
 		$Sco = array(
 			'folder-id' => $this->rootScoIdForTesting,
@@ -122,7 +134,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 		$this->assertTrue($read[$this->AdobeConnectSco->alias][$this->AdobeConnectSco->primaryKey]==$scoId);
 		$this->assertTrue($read[$this->AdobeConnectSco->alias]['name']==$Sco['name']);
 	}
-	function testFindSearchSco() {
+	public function testFindSearchSco() {
 		$time = time();
 		$name = 'testcontent '.$time.' '.__function__;
 		$Sco = array(
@@ -158,7 +170,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 		// seach should return two results (wildcard)
 		$found = $this->AdobeConnectSco->find("search", 'test*'.$time.' '.__function__);
 		$this->assertIdentical(count($found), 2);
-		// seach should return one result, (two results, filtered down by type)  
+		// seach should return one result, (two results, filtered down by type)
 		$found = $this->AdobeConnectSco->find("search", array('conditions' => array('name' => 'test*'.$time.' '.__function__, 'type' => 'content')));
 		$this->assertIdentical(count($found), 1);
 		$this->assertTrue($found[0][$this->AdobeConnectSco->alias][$this->AdobeConnectSco->primaryKey]==$scoIdContent);
@@ -166,7 +178,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 		$found = $this->AdobeConnectSco->find("search", 'test*x'.__function__);
 		$this->assertIdentical(count($found), 0);
 	}
-	function testFindContentsSco() {
+	public function testFindContentsSco() {
 		$time = time();
 		$name = 'testmeeting '.$time.' '.__function__;
 		$Sco = array(
@@ -188,7 +200,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 			);
 		$created = $this->AdobeConnectSco->save($Sco);
 		$this->deleteIds[] = $scoIdContent = $created[$this->AdobeConnectSco->alias][$this->AdobeConnectSco->primaryKey];
-		
+
 		// search shortcut, contentsg name
 		$found = $this->AdobeConnectSco->find("contents", $scoId);
 		$this->assertIdentical(count($found), 1);
@@ -208,7 +220,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 		// search full version, add secondary filter (failing)
 		$found = $this->AdobeConnectSco->find("contents", array('conditions' => array('sco-id' => $scoId, 'icon' => 'archive')));
 		$this->assertIdentical(count($found), 0);
-		
+
 		$name = 'testcontent archive '.$time.' '.__function__;
 		$Sco = array(
 			'folder-id' => $scoId,
@@ -225,12 +237,12 @@ class AdobeConnectScoTest extends CakeTestCase {
 		$this->assertTrue($found[0][$this->AdobeConnectSco->alias][$this->AdobeConnectSco->primaryKey]==$scoIdContentArchive);
 		$found = $this->AdobeConnectSco->find("contents", $scoId);
 		$this->assertIdentical(count($found), 2);
-		
+
 	}
-	function testFindSearchcontentSco() {
+	public function testFindSearchcontentSco() {
 		// don't really know how to test this one... not terribly important to me either.
 	}
-	function testMoveSco() {
+	public function testMoveSco() {
 		// create sco, move it, look for it in the new location, look for it in the old location
 	}
 }

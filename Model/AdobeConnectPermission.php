@@ -44,7 +44,7 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 	* The custom find methods (defined below)
 	* @var array
 	*/
-	public $_findMethods = array(
+	public $findMethods = array(
 		'permissions' => true,
 		);
 

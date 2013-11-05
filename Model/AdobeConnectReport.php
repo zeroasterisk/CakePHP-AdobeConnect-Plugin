@@ -12,44 +12,44 @@
 * @license MIT License - http://www.opensource.org/licenses/mit-license.php
 */
 class AdobeConnectReport extends AdobeConnectAppModel {
-	
+
 	/**
 	* The name of this model
 	* @var name
 	*/
-	
+
 	/**
 	* default value of "send-email" for the welcome email on new-user-create
 	* @var bool
 	*/
 	public $defaultSendEmailBool = false;
-	
+
 	/**
 	* The fields and their types for the form helper
 	* @var array
 	*/
 	public $_schema = array(
 		);
-	
-	
+
+
 	/**
 	* Set the primaryKey
 	* @var string
 	*/
 	public $primaryKey = 'acl-id';
-	
+
 	/**
 	* The custom find methods (defined below)
 	* @var array
 	*/
-	public $_findMethods = array(
+	public $findMethods = array(
 		'active' => true,
 		'coursestatus' => true,
 		'bulkconsolidatedtransactions' => true,
 		'meetingattendance' => true,
 		'meetingconcurrentusers' => true,
 		);
-	
+
 	/**
 	* Custom Find: reports all currently active meetings
 	* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171dd627-7ec3
@@ -70,7 +70,7 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			return $return;
 		}
 	}
-	
+
 	/**
 	* Custom Find: BulkConsolidatedTransactions (shows attendance transactions/sessions, only for principals, but has more precise information)
 	* Returns information about principal-to-SCO transactions on your Acrobat Connect Pro server or in your Acrobat Connect Pro hosted account.
@@ -112,7 +112,7 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			return $return;
 		}
 	}
-	
+
 	/**
 	* Custom Find: reports course status
 	* Returns summary information about a course, including the number of users who have passed, failed, and completed the course, as well as the current number of enrollees. The request requires the sco-id of a course.
@@ -148,7 +148,7 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			return $return;
 		}
 	}
-	
+
 	/**
 	* Custom Find: reports meeting attendance (shows attendance transactions/sessions, works for non-principals)
 	* Returns a list of users who attended a Acrobat Connect Pro meeting. The data is returned in row elements, one for each person who attended. If the meeting hasn’t started or had no attendees, the response contains no rows.The response does not include meeting hosts or users who were invited but did not attend.
@@ -185,7 +185,7 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			return $return;
 		}
 	}
-	
+
 	/**
 	* Custom Find: reports meeting concurrent users
 	* Returns the maximum number of users in Acrobat Connect Pro meetings concurrently in the last 30 days, and the number of times the maximum has been reached. The maximum is the peak number of users in any meetings at a single moment, whether one meeting, multiple concurrent meetings, or multiple overlapping meetings.

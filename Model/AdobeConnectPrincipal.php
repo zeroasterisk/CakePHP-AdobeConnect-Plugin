@@ -63,7 +63,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	* The custom find methods (defined below)
 	* @var array
 	*/
-	public $_findMethods = array(
+	public $findMethods = array(
 		'search' => true,
 		'info' => true,
 		);
