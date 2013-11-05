@@ -17,7 +17,6 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 	* The name of this model
 	* @var name
 	*/
-	public $name ='AdobeConnectReport';
 	
 	/**
 	* default value of "send-email" for the welcome email on new-user-create

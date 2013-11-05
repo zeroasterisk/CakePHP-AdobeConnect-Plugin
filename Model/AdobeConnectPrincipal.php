@@ -17,7 +17,6 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	* The name of this model
 	* @var name
 	*/
-	public $name ='AdobeConnectPrincipal';
 
 	/**
 	* default value of "send-email" for the welcome email on new-user-create
@@ -160,7 +159,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 			* run a secondary API call to update the user password
 			* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171dd627-7d12
 			*/ 
-			$db =& ConnectionManager::getDataSource($this->useDbConfig);
+			$db = ConnectionManager::getDataSource($this->useDbConfig);
 			$this->request = array();
 			$passwordUpdated = $db->request($this, array('action' => "user-update-pwd", "user-id" => $this->id, "password" => $data['password'], "password-verify" => $data['password']));
 		}
@@ -224,7 +223,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		}
 		$this->request['action'] = "principals-delete";
 		$this->request['principal-id'] = $id;
-		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		$response = $db->delete($this, $id);
 		if (!empty($response)) {
 			return true;

@@ -5,7 +5,7 @@
 *
 * If you don't want to create Scos, don't run this test.
 *
-* NOTE: you should define the $rootScoIdForTesting as the folder you want to create your test content into 
+* NOTE: you should define the $rootScoIdForTesting as the folder you want to create your test content into
 */
 
 App::import('model', 'AdobeConnect.AdobeConnectPermission');
@@ -13,25 +13,25 @@ App::import('model', 'AdobeConnect.AdobeConnectSco');
 App::import('model', 'AdobeConnect.AdobeConnectPrincipal');
 
 class AdobeConnectScoTest extends CakeTestCase {
-	var $deleteIdsSco = array();
-	var $deleteIdsPrincipal = array();
-	var $rootScoIdForTesting = 10039;
-	
+	public $deleteIdsSco = array();
+	public $deleteIdsPrincipal = array();
+	public $rootScoIdForTesting = 10039;
+
 	function startTest() {
-		$this->AdobeConnectPermission =& ClassRegistry::init('AdobeConnectPermission');
-		$this->AdobeConnectSco =& ClassRegistry::init('AdobeConnectSco');
-		$this->AdobeConnectPrincipal =& ClassRegistry::init('AdobeConnectPrincipal');
+		$this->AdobeConnectPermission = ClassRegistry::init('AdobeConnectPermission');
+		$this->AdobeConnectSco = ClassRegistry::init('AdobeConnectSco');
+		$this->AdobeConnectPrincipal = ClassRegistry::init('AdobeConnectPrincipal');
 	}
 	function endTest() {
 		if (!empty($this->deleteIdsSco)) {
-			foreach ( $this->deleteIdsSco as $i => $id ) { 
+			foreach ( $this->deleteIdsSco as $i => $id ) {
 				$this->AdobeConnectSco->delete($id);
 				unset($this->deleteIdsSco[$i]);
 			}
 		}
 		unset($this->AdobeConnectSco);
 		if (!empty($this->deleteIdsPrincipal)) {
-			foreach ( $this->deleteIdsPrincipal as $i => $id ) { 
+			foreach ( $this->deleteIdsPrincipal as $i => $id ) {
 				$this->AdobeConnectPrincipal->delete($id);
 				unset($this->deleteIdsPrincipal[$i]);
 			}
@@ -60,7 +60,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 		$this->assertTrue(!empty($response['Quotas']['Quota']));
 		$this->assertTrue(!empty($response['Trees']['Tree']));
 		$response = $this->AdobeConnectSco->request(array('action' => 'quota-threshold-info'), "/Quotas/Quota/.");
-		$this->assertIdentical($response, set::extract($quotas, "/Quotas/Quota/."));
+		$this->assertIdentical($response, Set::extract($quotas, "/Quotas/Quota/."));
 	}
 }
 ?>

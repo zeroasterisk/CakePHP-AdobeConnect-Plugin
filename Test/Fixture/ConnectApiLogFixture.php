@@ -7,7 +7,6 @@ class ConnectApiLogFixture extends CakeTestFixture {
  * @var string
  * @access public
  */
-	public $name = 'ConnectApiLog';
 
 /**
  * Fields

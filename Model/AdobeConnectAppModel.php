@@ -124,7 +124,7 @@ class AdobeConnectAppModel extends AppModel {
     * @return array $config
     */
 	public function config($config = array()) {
-		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		if (!empty($config) && is_array($config)) {
 			$db->config = Set::merge($db->config, $config);
 		}
@@ -140,7 +140,7 @@ class AdobeConnectAppModel extends AppModel {
     * @return string $sessionKey
     */
 	public function getSessionKey($userKey=null, $username=null, $password=null) {
-		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		return $db->getSessionKey(array('action' => 'custom'), $userKey, $username, $password);
 	}
 	
@@ -149,7 +149,7 @@ class AdobeConnectAppModel extends AppModel {
     * @return int $secondsToAdd to Connect timestamps to end up with this server's (negative numbers are fine, they just subtract)
     */
     public function getConnectTimeOffset() {
-    	$db =& ConnectionManager::getDataSource($this->useDbConfig);
+    	$db = ConnectionManager::getDataSource($this->useDbConfig);
     	if (isset($db->config['server-time-offset']) && !empty($db->config['server-time-offset'])) {
     		return $db->config['server-time-offset'];
     	}
@@ -185,7 +185,7 @@ class AdobeConnectAppModel extends AppModel {
 			$data = Set::merge($data, $this->parseFiltersFromQuery($data['data']));
 			unset($data['data']);
 		}
-		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		$response = $db->request($this, $data);
 		if (empty($response)) {
 			$response = $db->response;

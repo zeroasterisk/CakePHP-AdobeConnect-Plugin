@@ -9,10 +9,10 @@
 App::import('model', 'AdobeConnect.AdobeConnectPrincipal');
 
 class AdobeConnectPrincipalTest extends CakeTestCase {
-	var $deleteIds = array();
+	public $deleteIds = array();
 	
 	function startTest() {
-		$this->AdobeConnectPrincipal =& ClassRegistry::init('AdobeConnectPrincipal');
+		$this->AdobeConnectPrincipal = ClassRegistry::init('AdobeConnectPrincipal');
 	}
 	function endTest() {
 		if (!empty($this->deleteIds)) {

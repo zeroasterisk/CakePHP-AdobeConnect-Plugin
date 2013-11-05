@@ -19,7 +19,6 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 	* The name of this model
 	* @var name
 	*/
-	public $name ='AdobeConnectPermission';
 
 	/**
 	* default value of "send-email" for the welcome email on new-user-create
@@ -135,7 +134,7 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 		}
 		$this->request = $data;
 		$this->request['action'] = "permissions-update";
-		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		$response = $db->request($this, $this->request);
 		$this->request = $initial;
 		if (isset($response['status']['@code']) && $response['status']['@code']=='ok') {
@@ -178,7 +177,7 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 			'action' => "permissions-reset",
 			'acl-id' => $scoId,
 			);
-		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		$response = $db->request($this, $this->request);
 		if (isset($response['status']['@code']) && $this->response['status']['@code']=="ok") {
 			return true;

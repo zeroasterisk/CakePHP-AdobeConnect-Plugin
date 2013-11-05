@@ -11,8 +11,8 @@
 App::import('model', 'AdobeConnect.AdobeConnectSco');
 
 class AdobeConnectScoTest extends CakeTestCase {
-	var $deleteIds = array();
-	var $rootScoIdForTesting = 10039;
+	public $deleteIds = array();
+	public $rootScoIdForTesting = 10039;
 	
 	function startTest() {
 		$this->AdobeConnectSco = ClassRegistry::init('AdobeConnectSco');

@@ -17,7 +17,6 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	* The name of this model
 	* @var name
 	*/
-	public $name ='AdobeConnectSco';
 
 	/**
 	* default value of "send-email" for the welcome email on new-user-create
@@ -212,7 +211,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		}
 		$this->request['action'] = "sco-delete";
 		$this->request['sco-id'] = $id;
-		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		$response = $db->delete($this, $id);
 		if (!empty($response)) {
 			return true;
@@ -235,7 +234,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		$this->request['action'] = "sco-move";
 		$this->request['sco-id'] = $sco_id;
 		$this->request['folder-id'] = $folder_id;
-		$db =& ConnectionManager::getDataSource($this->useDbConfig);
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		$response = $db->request($this);
 		if (!empty($response)) {
 			return true;
