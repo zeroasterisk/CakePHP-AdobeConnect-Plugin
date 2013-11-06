@@ -465,7 +465,6 @@ class AdobeConnectSource extends DataSource {
 			return $response['common']['cookie'];
 		}
 		return $this->__error("Unable to get sessionKey"); 
-		return false;
 	}
 	
 	/**
