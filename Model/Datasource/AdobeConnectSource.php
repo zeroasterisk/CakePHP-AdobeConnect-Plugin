@@ -678,9 +678,7 @@ class AdobeConnectSource extends DataSource {
 			} else {
 				$statusCodes = Set::extract($responseArray, "/status");
 				foreach ( $statusCodes as $statusCode ) {
-					if (isset($statusCode['status']['@subcode'])) {
-						$this->__error("{$statusCode['status']['@code']}: {$statusCode['status']['@subcode']}");
-					} elseif ($statusCode['status']['@code']!='no-data') {
+					if ($statusCode['status']['@code']!='no-data') {
 						$this->__error("CODE: {$statusCode['status']['@code']}");
 					}
 				}
