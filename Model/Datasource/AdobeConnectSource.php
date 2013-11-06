@@ -300,7 +300,7 @@ class AdobeConnectSource extends DataSource {
 	* @param bool $alsoClearErrors true
 	* @param bool $alsoClearLog false
 	*/
-	function reset($reason='unknown', $alsoClearErrors=true, $alsoClearLog=false) {
+	public function reset($reason='unknown', $alsoClearErrors=true, $alsoClearLog=false) {
 		foreach( array('series_id', 'course_id', 'event_id', 'member_id') as $key) {
 			$this->$key = 0;
 		}
@@ -320,41 +320,6 @@ class AdobeConnectSource extends DataSource {
 		$this->log[] = array("reset" => $reason);
 		return true;
 	}
-
-	/**
-	* Parse the result of API call
-	* @param returning xml result
-	* @return mixed deep result of query or false if unable to parse 
-	*/
-	function __parseResult($result){
-		try {
-			$result = Xml::toArray(Xml::build($result->body));
-			return $result;
-		} catch (XmlException $e) {
-			$this->errors[] = $e->getMessage();
-		}
-		return false;
-	}
-	
-	/**
-	* Cleaning the data passed into request
-	* @param array of data
-	* @return array of data.
-	*/
-	private function __requestPassableData($data) {
-		foreach ( $data as $key => $val ) { 
-			if (in_array($key, $this->keysDataRestricted)) {
-				unset($data[$key]);
-			} elseif (is_bool($val) || in_array($key, $this->keysForceBoolValues)) {
-				$data[$key] = (empty($val) ? 0 : 1);
-			} elseif (is_array($val)) {
-				$data[$key] = json_encode($val);
-			} elseif ($val===null || $val=="") {
-				unset($data[$key]);
-			}
-		}
-		return $data;
-	}
 	
 	/**
 	* Adds in common elements to the request such as AdobeConnect version and Developer
@@ -369,7 +334,7 @@ class AdobeConnectSource extends DataSource {
 		$alias = 'AdobeConnectSource';
 		$Model = false;
 		//Verify that model_or_null is a model.
-		if (is_object($model_or_null) && is_subclass_of($model_or_null, 'Model')) {
+		if (is_object($model_or_null) && is_a($model_or_null, 'Model')) {
 			$Model = $model_or_null;
 			$alias = $Model->alias;
 			if (isset($Model->request) && is_array($Model->request)) {
@@ -385,20 +350,20 @@ class AdobeConnectSource extends DataSource {
 			'action' => 'unknown',
 		), $data);
 
-		$errors = array();
 		if ($data['action'] == "unknown") {
-			$this->errors[] = $error = "$alias::request: missing action: ".json_encode($data);
+			$this->__error("$alias::request: missing action: ".json_encode($data));
 			trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
 			return false;
 		}
-		if ($data['action'] != "common-info") {
+		if (empty($data['session']) && $data['action'] != 'common-info') {
 			$data['session'] = $this->getSessionKey($this->userKey);
 			if (empty($data['session'])) {
-				$text = 'Unable to retrieve sessionKey. Check.';
+				$text = 'Unable to retrieve sessionKey.';
 				$text .= implode("\n", $this->errors);
 				throw new AdobeConnectException($text);
 			}
 		}
+
 		//Scrub the data so it's ready for request.
 		$data = $this->__requestPassableData($data);
 		//dataCleaned is what isn't model specific data
@@ -433,50 +398,22 @@ class AdobeConnectSource extends DataSource {
 		
 		# parse response
 		$responseArray = $this->__parseResult($response);
-		# extract status
-		$responseArray = (isset($responseArray['results']) && is_array($responseArray['results']) ? $responseArray['results'] : $responseArray);
-		# extract status
-		$good = (isset($responseArray['status']['@code']) && $responseArray['status']['@code']=="ok");
-		# extract errors
-		if (!$good) {
-			# look for no-login error (session expired?) login again and retry
-			if (isset($responseArray['status']['@subcode']) && $responseArray['status']['@subcode']=="no-login" && !$this->autoFailedSession) {
-				$this->autoFailedSession = true;
-				$this->reset("No Login after action - automatic reset and re-attempt");
-				return $this->request($model_or_null, $data, $requestOptions);
-			}
-			# general errors
-			$invalid = Set::extract($responseArray, "/status/invalid");
-			if (!empty($invalid)) {
-				foreach ( $invalid as $_invalid ) {
-					$errors[] =  "INVALID: {$_invalid['invalid']['@field']}: {$_invalid['invalid']['@subcode']}";
-				}
-			} else {
-				$statusCodes = Set::extract($responseArray, "/status");
-				foreach ( $statusCodes as $statusCode ) {
-					if (isset($statusCode['status']['@subcode'])) {
-						$errors[] =  "{$statusCode['status']['@code']}: {$statusCode['status']['@subcode']}";
-					} elseif ($statusCode['status']['@code']!='no-data') {
-						$errors[] =  "CODE: {$statusCode['status']['@code']}";
-					}
-				}
-			}
+		
+		if ($responseArray === 'no-login') {
+			$this->autoFailedSession = true;
+			$this->reset("No Login after action - automatic reset and re-attempt");
+			return $this->request($model_or_null, $data, $requestOptions);
 		}
+		
 		# log request
 		$log = array(
 			'action' => $data['action'],
 			'url' => $this->config['url'],
 		);
-		if (!$this->log(array_merge($log, compact('data', 'dataCleaned', 'dataAsXML', 'responseArray', 'response', 'errors')))) {
-			$errors[] = 'Unable to save log';
+		if (!$this->log(array_merge($log, compact('data', 'dataCleaned', 'dataAsXML', 'responseArray', 'response')))) {
+			$this->__error('Unable to save log');
 		}
-		# flesh out logged errors
-		if (!empty($errors)) {
-			$this->lastError = implode(' | ', $errors);
-			$errors[] = array('log' => current($this->log));
-			array_unshift($errors, "Errors with Action: [{$data['action']}]");
-			$this->errors[] = $errors;
-		}
+		
 		# add response/log/errors to model object, if exists
 		if ($Model) {
 			$Model->response = $responseArray;
@@ -484,7 +421,7 @@ class AdobeConnectSource extends DataSource {
 			$Model->errors = $this->errors;
 		}
 		# return
-		if ($good) {
+		if ($responseArray) {
 			return $responseArray;
 		}
 		return false;
@@ -506,8 +443,8 @@ class AdobeConnectSource extends DataSource {
 		$data['data'] = json_encode($data['data']);
 		$data['dataCleaned'] = json_encode($data['dataCleaned']);
 		$data['userKey'] = $this->userKey;
-		$data['userData'] = (isset($this->users[$this->userKey]) ? $this->users[$this->userKey] : 'missing');
-		$data['errors'] = array_unique($this->errors + $data['errors']);
+		$data['userData'] = $this->userConfig($this->userKey);
+		$data['errors'] = $this->errors;
 		$this->log[] = $data;
 		$data['errors'] = json_encode($data['errors']);
 		unset($data['response']); //we're not storing that data, unset it.
@@ -527,7 +464,7 @@ class AdobeConnectSource extends DataSource {
 		if (!empty($response['common']['cookie'])) {
 			return $response['common']['cookie'];
 		}
-		$this->errors[] = "Unable to get sessionKey"; 
+		return $this->__error("Unable to get sessionKey"); 
 		return false;
 	}
 	
@@ -558,7 +495,8 @@ class AdobeConnectSource extends DataSource {
 		$response = $this->request(null, array(
 			'action' => "login", 
 			'login' => $userData['username'], 
-			'password' => $userData['password']
+			'password' => $userData['password'],
+			'session' => $userData['sessionKey']
 		));
 		if (isset($response['status']['@code']) && $response['status']['@code'] == "ok") {
 			//Mark user as logged in.
@@ -582,8 +520,7 @@ class AdobeConnectSource extends DataSource {
 		}
 		$userData = $this->getSessionLogin($userKey);
 		if (!$userData) {
-			$this->errors[] = 'Unable to login.';
-			return false;
+			return $this->__error('Unable to login.');
 		}
 		if ($cacheKey) {
 			Cache::write($cacheKey, $userData, $this->config['cacheEngine']);
@@ -697,5 +634,81 @@ class AdobeConnectSource extends DataSource {
 	*/
 	public function stash($key, $value) {
 		return $this->stashed[$key] = $value;
+	}
+	
+	/**
+	* Error setting
+	* @param string error message
+	* @return false (use this as your return on error)
+	*/
+	private function __error($message) {
+		$this->errors[] = $message;
+		return false;
+	}
+	
+	/**
+	* Parse the result of API call
+	* @param returning xml result
+	* @return mixed deep result of query or false if unable to parse or string if login required.
+	*/
+	private function __parseResult($result){
+		try {
+			$result = Xml::toArray(Xml::build($result->body));
+		} catch (XmlException $e) {
+			return $this->__error($e->getMessage());
+		}
+		
+		if (empty($result)) {
+			return $this->__error('Empty Response.');
+		}
+		
+		$responseArray = (isset($result['results']) && is_array($result['results']) ? $result['results'] : $result);
+		# extract status
+		$good = (isset($responseArray['status']['@code']) && $responseArray['status']['@code']=="ok");
+		# extract errors
+		if (!$good) {
+			// no login error, send  'no-login' so we can try again.
+			if (isset($responseArray['status']['@subcode'])) {
+				return $responseArray['status']['@subcode'];
+			}
+			$invalid = Set::extract($responseArray, "/status/invalid");
+			if (!empty($invalid)) {
+				foreach ( $invalid as $_invalid ) {
+					$this->__error("INVALID: {$_invalid['invalid']['@field']}: {$_invalid['invalid']['@subcode']}");
+				}
+			} else {
+				$statusCodes = Set::extract($responseArray, "/status");
+				foreach ( $statusCodes as $statusCode ) {
+					if (isset($statusCode['status']['@subcode'])) {
+						$this->__error("{$statusCode['status']['@code']}: {$statusCode['status']['@subcode']}");
+					} elseif ($statusCode['status']['@code']!='no-data') {
+						$this->__error("CODE: {$statusCode['status']['@code']}");
+					}
+				}
+			}
+			return false;
+		}
+		
+		return $responseArray;
+	}
+	
+	/**
+	* Cleaning the data passed into request
+	* @param array of data
+	* @return array of data.
+	*/
+	private function __requestPassableData($data) {
+		foreach ( $data as $key => $val ) { 
+			if (in_array($key, $this->keysDataRestricted)) {
+				unset($data[$key]);
+			} elseif (is_bool($val) || in_array($key, $this->keysForceBoolValues)) {
+				$data[$key] = (empty($val) ? 0 : 1);
+			} elseif (is_array($val)) {
+				$data[$key] = json_encode($val);
+			} elseif ($val===null || $val=="") {
+				unset($data[$key]);
+			}
+		}
+		return $data;
 	}
 }
