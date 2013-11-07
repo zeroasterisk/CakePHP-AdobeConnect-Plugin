@@ -1,68 +1,68 @@
 <?php
 App::uses('Set','Utility');
 class AdobeConnectAppModel extends AppModel {
-	
+
 	/**
-	* The models in the plugin get data from the web service, so they don't need a table.
-	* @var string
-	*/
+	 * The models in the plugin get data from the web service, so they don't need a table.
+	 * @var string
+	 */
 	public $useTable = false;
-	
+
 	/**
-	* The models in the plugin need a datasource
-	* @var string
-	*/
+	 * The models in the plugin need a datasource
+	 * @var string
+	 */
 	public $useDbConfig = 'adobe_connect';
-	
+
 	/**
-	* Methods in the models result in HTTP requests using the HttpSocket. So
-	* rather than do all the heavy lifting in the datasource, we set the various
-	* params of the request in the individual model methods. This ties the model
-	* to the data layer, but these models are especially for this datasource.
-	*
-	* @var array
-	*/
+	 * Methods in the models result in HTTP requests using the HttpSocket. So
+	 * rather than do all the heavy lifting in the datasource, we set the various
+	 * params of the request in the individual model methods. This ties the model
+	 * to the data layer, but these models are especially for this datasource.
+	 *
+	 * @var array
+	 */
 	public $request = array();
 	/**
-	* Since the webservice call returns the results in the current page of the
-	* result set and the total number of results in the whole results set, we
-	* need custom paginate and paginateCount methods, whereby the call to the
-	* web service is made in the paginateCount method, the results stored and the
-	* total results returned, then the actual results are returned from the
-	* paginate method. This way the call to the web service is only made once.
-	* However, in order to do this, we need to know the page and limit params in
-	* the paginateCount method. So these should be set in this Model::paginate
-	* property in the controller, before calling Controller::paginate().
-	*
-	* @var array
-	*/
+	 * Since the webservice call returns the results in the current page of the
+	 * result set and the total number of results in the whole results set, we
+	 * need custom paginate and paginateCount methods, whereby the call to the
+	 * web service is made in the paginateCount method, the results stored and the
+	 * total results returned, then the actual results are returned from the
+	 * paginate method. This way the call to the web service is only made once.
+	 * However, in order to do this, we need to know the page and limit params in
+	 * the paginateCount method. So these should be set in this Model::paginate
+	 * property in the controller, before calling Controller::paginate().
+	 *
+	 * @var array
+	 */
 	public $paginate = array();
 	/**
-	* Temporarily stores the results after being fetched during the paginateCount
-	* method, before returning in the paginate method.
-	*
-	* @var array
-	*/
+	 * Temporarily stores the results after being fetched during the paginateCount
+	 * method, before returning in the paginate method.
+	 *
+	 * @var array
+	 */
 	protected $_results = null;
 	/**
-	* Adds the datasource to the Connection Manager's list of sources if it is
-	* not already there. It would normally be there if you add the datasource
-	* details to your app/config/database.php file, but this code negates the
-	* need to do that. It adds the datasource for the current model being
-	* constructed with default basic configuration options, and extra options
-	* from the ADOBECONNECT_CONFIG->{$this->useDbConfig} class property from the file in
-	* plugins/gdata/config/gdata_config.php if it exists, and extra options from
-	* AdobeConnect.config key in the Configure class, if set. Options should include
-	* X-GData-Key as a minimum if required by the AdobeConnect API, and also optionally
-	* oauth_consumer_key, oauth_consumer_secret, oauth_token and
-	* oauth_token_secret keys
-	*
-	* @param mixed $id
-	* @param string $table
-	* @param mixed $ds
-	*/
+	 * Adds the datasource to the Connection Manager's list of sources if it is
+	 * not already there. It would normally be there if you add the datasource
+	 * details to your app/config/database.php file, but this code negates the
+	 * need to do that. It adds the datasource for the current model being
+	 * constructed with default basic configuration options, and extra options
+	 * from the ADOBECONNECT_CONFIG->{$this->useDbConfig} class property from the file in
+	 * plugins/gdata/config/gdata_config.php if it exists, and extra options from
+	 * AdobeConnect.config key in the Configure class, if set. Options should include
+	 * X-GData-Key as a minimum if required by the AdobeConnect API, and also optionally
+	 * oauth_consumer_key, oauth_consumer_secret, oauth_token and
+	 * oauth_token_secret keys
+	 *
+	 * @param mixed $id
+	 * @param string $table
+	 * @param mixed $ds
+	 */
 	public function __construct($id = false, $table = null, $ds = null) {
-		
+
 		// Get the list of datasource that the ConnectionManager is aware of
 		$sources = ConnectionManager::sourceList();
 		// If this model's datasource isn't in it, add it
@@ -74,7 +74,7 @@ class AdobeConnectAppModel extends AppModel {
 				'url' => null,
 				'username' => null,
 				'password' => null,
-				);
+			);
 			// Try an import the plugins/adobe_connect/config/adobe_connect_config.php file and merge
 			// any default and datasource specific config with the defaults above
 			if (App::import(array('type' => 'File', 'name' => 'AdobeConnect.ADOBECONNECT_CONFIG', 'file' => APP.'config'.DS.'adobe_connect_config.php'))) {
@@ -117,12 +117,25 @@ class AdobeConnectAppModel extends AppModel {
 		parent::__construct($id, $table, $ds);
 		$this->useDbConfig = $useDbConfig;
 	}
-	
+
 	/**
-    * Simple function to return the $config array
-    * @param array $config if set, merge with existing array
-    * @return array $config
-    */
+	 * Error setting
+	 *
+	 * @param string error message
+	 * @return false (use this as your return on error)
+	 */
+	public function __error($message) {
+		$this->errors[] = $message;
+		// TODO convert to exception
+		trigger_error(__d('adobe_connect', $message), E_USER_WARNING);
+		return false;
+	}
+
+	/**
+	 * Simple function to return the $config array
+	 * @param array $config if set, merge with existing array
+	 * @return array $config
+	 */
 	public function config($config = array()) {
 		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		if (!empty($config) && is_array($config)) {
@@ -130,55 +143,55 @@ class AdobeConnectAppModel extends AppModel {
 		}
 		return $db->config;
 	}
-	
+
 	/**
-    * Simple function to return an activated sessionKey 
-    * NOTE: if you want to initialize a new sessionKey, use initUser() or reset() and then this function
-    * @param string $userKey (optional)
-    * @param string $username (optional)
-    * @param string $password (optional)
-    * @return string $sessionKey
-    */
+	 * Simple function to return an activated sessionKey
+	 * NOTE: if you want to initialize a new sessionKey, use initUser() or reset() and then this function
+	 * @param string $userKey (optional)
+	 * @param string $username (optional)
+	 * @param string $password (optional)
+	 * @return string $sessionKey
+	 */
 	public function getSessionKey($userKey=null, $username=null, $password=null) {
 		$db = ConnectionManager::getDataSource($this->useDbConfig);
-		return $db->getSessionKey(array('action' => 'custom'), $userKey, $username, $password);
+		return $db->getSessionKey(null, $userKey, $username, $password);
 	}
-	
+
 	/**
-    * simple function to determin the time diff from the connect server/timestamps and this server's 
-    * @return int $secondsToAdd to Connect timestamps to end up with this server's (negative numbers are fine, they just subtract)
-    */
-    public function getConnectTimeOffset() {
-    	$db = ConnectionManager::getDataSource($this->useDbConfig);
-    	if (isset($db->config['server-time-offset']) && !empty($db->config['server-time-offset'])) {
-    		return $db->config['server-time-offset'];
-    	}
-    	$common = $db->request($this, array('action' => 'common-info'));
-    	if (!isset($common['Common']['date'])) {
-    		$this->errors[] = $error = "{$this->alias}::getConnectTimeOffset: Unable to get the Common Information";
+	 * simple function to determin the time diff from the connect server/timestamps and this server's
+	 * @return int $secondsToAdd to Connect timestamps to end up with this server's (negative numbers are fine, they just subtract)
+	 */
+	public function getConnectTimeOffset() {
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
+		if (isset($db->config['server-time-offset']) && !empty($db->config['server-time-offset'])) {
+			return $db->config['server-time-offset'];
+		}
+		$common = $db->request($this, array('action' => 'common-info'));
+		if (!isset($common['common']['date'])) {
+			$this->errors[] = $error = "{$this->alias}::getConnectTimeOffset: Unable to get the Common Information";
 			trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
 			return false;
-    	}
-    	$serverTimeEpoch = strtotime($common['Common']['date']);
-    	$selfTime = time();
-    	$secondsToAdd = $selfTime-$serverTimeEpoch;
-    	$db->config['server-time-offset'] = $secondsToAdd;
-    	return $secondsToAdd;
-    }
-	
-    /**
-	* Special request action... allows custom API calls to happen (make sure you've got your $data array correct) 
-	*
-	* @param array $data
-	* @param array $setExtractPath (optional, if set, it runs Set::extract() on the response)
-	*/
+		}
+		$serverTimeEpoch = strtotime($common['common']['date']);
+		$selfTime = time();
+		$secondsToAdd = $selfTime-$serverTimeEpoch;
+		$db->config['server-time-offset'] = $secondsToAdd;
+		return $secondsToAdd;
+	}
+
+	/**
+	 * Special request action... allows custom API calls to happen (make sure you've got your $data array correct)
+	 *
+	 * @param array $data
+	 * @param array $setExtractPath (optional, if set, it runs Set::extract() on the response)
+	 */
 	public function request($data, $setExtractPath = null) {
 		if (is_string($data)) {
 			$data['action'] = $data;
 		}
 		if (!isset($data['action'])) {
 			$this->errors[] = $error = "{$this->alias}::Request: Missing action key ".json_encode($data);
-    		trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
+			trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
 			return false;
 		}
 		if (!isset($data['data']) && !empty($data['data'])) {
@@ -192,35 +205,73 @@ class AdobeConnectAppModel extends AppModel {
 		}
 		if (empty($response)) {
 			return false;
-		} 
+		}
+		$response = $this->responseCleanAttr($response);
 		if (is_string($setExtractPath) && !empty($setExtractPath)) {
 			return Set::extract($response, $setExtractPath);
 		}
-    	return $response;
+		return $response;
 	}
-	
+
 	/**
-	* Overloads the Model::find() method. 
-	* Resets request array in between finds, caches initial request array and resets on complete.
-	*
-	* @param string $type
-	* @param array $options
-	*/
+	 * Response arrays may have fields/keys with a '@' prefix -- remove those
+	 *
+	 * @param array $array
+	 * @return array $array
+	 */
+	public function responseCleanAttr($array) {
+		if (!is_array($array)) {
+			return $array;
+		}
+		foreach (array_keys($array) as $key) {
+			if (is_array($array[$key])) {
+				$array[$key] = $this->responseCleanAttr($array[$key]);
+			}
+			if (substr(trim($key), 0, 1) == '@') {
+				$array[str_replace('@', '', trim($key))] = $array[$key];
+				unset($array[$key]);
+			}
+		}
+		return $array;
+	}
+
+	/**
+	 * Overloads the Model::find() method.
+	 * Resets request array in between finds, caches initial request array and resets on complete.
+	 *
+	 * NOTE: this strips out all '@' keys from results, all keys are text only fields
+	 *
+	 * @param string $type
+	 * @param array $options
+	 * @return mixed array or false
+	 */
 	public function find($type = 'first', $options = array()) {
 		$initial = $this->request;
 		$this->request = array();
-		$options = Set::merge(array('order' => null, 'recursive' => null, 'conditions' => null, 'fields' => null,), $options); 
+		$options = Set::merge(array('order' => null, 'recursive' => null, 'conditions' => null, 'fields' => null,), $options);
 		$return = parent::find($type, $options);
+		$return = $this->responseCleanAttr($return);
 		$this->request = $initial;
 		return $return;
 	}
-	
+
 	/**
-	* Overloads the Model::delete() method. 
-	* Resets request array in between finds, caches initial request array and resets on complete.
-	*
-	* @param int $id
-	*/
+	 * Overwrite of the exists() function
+	 * means everything is a create() / new
+	 *
+	 * @param mixed $id (ignored)
+	 * @return boolean [false]
+	 */
+	public function exists($id = null) {
+		return true;
+	}
+
+	/**
+	 * Overloads the Model::delete() method.
+	 * Resets request array in between finds, caches initial request array and resets on complete.
+	 *
+	 * @param int $id
+	 */
 	public function delete($id = null, $cascade = true) {
 		$initial = $this->request;
 		$this->request = array();
@@ -228,13 +279,13 @@ class AdobeConnectAppModel extends AppModel {
 		$this->request = $initial;
 		return $return;
 	}
-	
+
 	/**
-	* Add pagination params from the $query to the $request
-	*
-	* @param array $query Query array sent as options to a find call
-	* @return array
-	*/
+	 * Add pagination params from the $query to the $request
+	 *
+	 * @param array $query Query array sent as options to a find call
+	 * @return array
+	 */
 	protected function _paginationParams($query) {
 		/*
 		if (!empty($query['limit'])) {
@@ -247,64 +298,63 @@ class AdobeConnectAppModel extends AppModel {
 		} else {
 			$this->request['uri']['query']['start-index'] = $query['page'] = 1;
 		}
-		*/
+		 */
 		return $query;
 	}
-	
-	
+
+
 	/**
-	* Called by Controller::paginate(). Calls the custom find type. Stores the
-	* results for later returning in the paginate() method. Returns the total
-	* number of results from the full result set.
-	*
-	* @param array $conditions
-	* @param integer $recursive
-	* @param array $extra
-	* @return integer The number of items in the full result set
-	*/
+	 * Called by Controller::paginate(). Calls the custom find type. Stores the
+	 * results for later returning in the paginate() method. Returns the total
+	 * number of results from the full result set.
+	 *
+	 * @param array $conditions
+	 * @param integer $recursive
+	 * @param array $extra
+	 * @return integer The number of items in the full result set
+	 */
 	public function paginateCount($conditions, $recursive = 1, $extra = array()) {
 		$response = $this->find($this->paginate[0], $this->paginate);
 		$this->_results = $response;
 		return $response['feed']['totalResults'];
 	}
-	
+
 	/**
-	* Returns the results of the call to the web service fetched in the
-	* self::paginateCount() method above.
-	*
-	* @param mixed $conditions
-	* @param mixed $fields
-	* @param mixed $order
-	* @param integer $limit
-	* @param integer $page
-	* @param integer $recursive
-	* @param array $extra
-	* @return array The results of the call to the web service
-	*/
+	 * Returns the results of the call to the web service fetched in the
+	 * self::paginateCount() method above.
+	 *
+	 * @param mixed $conditions
+	 * @param mixed $fields
+	 * @param mixed $order
+	 * @param integer $limit
+	 * @param integer $page
+	 * @param integer $recursive
+	 * @param array $extra
+	 * @return array The results of the call to the web service
+	 */
 	public function paginate($conditions, $fields = null, $order = null, $limit = null, $page = 1, $recursive = null, $extra = array()) {
 		return $this->_results;
 	}
-	
+
 	/**
-	* In many cases we need to translate CakePHP $query/$findOptions to AdobeConnect Filters
-	* @param array $query
-	* @return array $request ($this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query)))
-	*/
+	 * In many cases we need to translate CakePHP $query/$findOptions to AdobeConnect Filters
+	 * @param array $query
+	 * @return array $request ($this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query)))
+	 */
 	public function parseFiltersFromQuery($query) {
 		$request = array();
 		if (isset($query['recursive'])) {
-			$request["filter-depth"] = $query['recursive'];
-			if (empty($request['filter-depth'])) {
-				unset($request['filter-depth']);
-			}
+			// no longer supported... oh well
+			unset($query['recursive']);
 		}
 		if (isset($query['limit'])) {
 			$request["filter-rows"] = $query['limit'];
 		} else {
+			// default limit = 200
 			$request["filter-rows"] = 200;
 		}
-		if (isset($query['page'])) {
-			$request["filter-start"] = (($query['page'] -1) * $request["filter-rows"]) + 1;
+		if (isset($query['page']) && $query['page'] != 1) {
+			$request["filter-start"] = (($query['page'] -1) * $request["filter-rows"]);
 		}
 		if (isset($query['order'])) {
 			if (is_string($query['order']) && strpos($query['order'], ',')) {
@@ -367,18 +417,21 @@ class AdobeConnectAppModel extends AppModel {
 		}
 		return $request;
 	}
+
 	/**
-	* A string to search for. To use any of these special characters in the query string, escape them with a backslash before the character: 
-	*    + - && || ! ( ) { } [ ] ^ " ~ * ? : \
-	*    The query string is not case-sensitive and allows wildcard characters * and ? at the end of the query string.
-	* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html
-	* @param string $string
-	* @return string $string
-	*/
-	function escapeString($string) {
+	 * A string to search for. To use any of these special characters in the query string, escape them with a backslash before the character:
+	 *    + - && || ! ( ) { } [ ] ^ " ~ * ? : \
+	 *    The query string is not case-sensitive and allows wildcard characters * and ? at the end of the query string.
+	 * @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html
+	 * @param string $string
+	 * @return string $string
+	 */
+	public function escapeString($string) {
 		return str_replace(
 			array('+', '-', '&&', '||', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', '*', '?', ':', '\\'),
 			array('\\+', '-', '\\&&', '\\||', '\\!', '\\(', '\\)', '\\{', '\\}', '\\[', '\\]', '\\^', '\\"', '\\~', '%', '\\?', '\\:', '\\\\'),
 			trim($string));
 	}
+
 }
+

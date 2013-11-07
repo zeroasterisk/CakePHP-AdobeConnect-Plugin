@@ -14,9 +14,17 @@
 class AdobeConnectPrincipal extends AdobeConnectAppModel {
 
 	/**
-	* The name of this model
-	* @var name
-	*/
+	 * The models in the plugin get data from the web service, so they don't need a table.
+	 * @var string
+	 */
+	public $useTable = false;
+
+	/**
+	 * The models in the plugin need a datasource
+	 * @var string
+	 */
+	public $useDbConfig = 'adobe_connect';
+
 
 	/**
 	* default value of "send-email" for the welcome email on new-user-create
@@ -124,49 +132,47 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 			$requiredKeys = array('last-name', 'first-name', 'name', 'login', 'email');
 			$missingFields = array_diff_key(array_flip($requiredKeys), $data);
 			if (!empty($missingFields)) {
-				$this->errors[] = $error = "{$this->alias}::Save: missing required field: ".implode(', ',array_keys($missingFields));
-				trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
-				$this->request = $initial;
-				return false;
+				return $this->error("{$this->alias}::Save: missing required field: ".implode(', ',array_keys($missingFields)));
 			}
 		}
 		// Add the content type in so OAuth won't use the body in the signature
 		$this->request = $data;
 		$this->request['action'] = "principal-update";
 		$result = parent::save(array($this->alias => $data), $validate, $fieldList);
-		if (isset($this->response['status']['invalid'])) {
-			$this->errors[] = $error = "{$this->alias}::Save: Invalid Fields: ".json_encode($this->response['status']['invalid']);
-			trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
+		// the API response is on this->response (set there by the source)
+		$result = $this->responseCleanAttr($this->response);
+		if (isset($result['status']['invalid'])) {
+			return $this->error("{$this->alias}::Save: Invalid Fields: ".json_encode($result['status']['invalid']));
+		}
+		if (empty($result['principal'][$this->primaryKey]) && !empty($data[$this->primaryKey])) {
+			// on "update" we don't get back any data besides success...
+			//   so we set the PK from the input $data
+			$result['principal'][$this->primaryKey] = $data[$this->primaryKey];
+		}
+		if (empty($result['principal'][$this->primaryKey])) {
 			$this->request = $initial;
 			return false;
 		}
-		if (isset($this->response['principal'][$this->primaryKey])) {
-			$this->id = $this->response['principal'][$this->primaryKey];
-			$result[$this->alias][$this->primaryKey] = $this->id;
-		}
-		if (isset($this->response[$this->alias][$this->primaryKey])) {
-			$result = $this->response;
-		}
-		if (isset($result[$this->alias][$this->primaryKey])) {
-			$this->id = $result[$this->alias][$this->primaryKey];
-			$result[$this->alias][$this->primaryKey] = $this->id;
-		} else {
-			$this->request = $initial;
-			return false;
-		}
+		$this->id = $result['principal'][$this->primaryKey];
+		$this->setInsertID($this->id);
+		$result[$this->alias][$this->primaryKey] = $this->id;
+		$result[$this->alias] = array_merge($result['principal'], $result[$this->alias]);
+		unset($result['principal']);
+
+		// Did we initially pass in a 'password' to save?
 		if (isset($data['password']) && !empty($data['password'])) {
-			/**
-			* run a secondary API call to update the user password
-			* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171dd627-7d12
-			*/ 
+			/*
+			 * run a secondary API call to update the user password
+			 * @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171dd627-7d12
+			 */
 			$db = ConnectionManager::getDataSource($this->useDbConfig);
 			$this->request = array();
-			$passwordUpdated = $db->request($this, array('action' => "user-update-pwd", "user-id" => $this->id, "password" => $data['password'], "password-verify" => $data['password']));
+			$passwordData = array('action' => "user-update-pwd", "user-id" => $this->id, "password" => $data['password'], "password-verify" => $data['password']);
+			$passwordResult = $db->request($this, $passwordData);
+			if (isset($passwordResult['status']['invalid'])) {
+				return $this->error("{$this->alias}::Save: Unable to update password: ".json_encode($passwordResult['status']['invalid']));
+			}
 		}
-		if ($result) {
-			$this->setInsertID($result[$this->alias][$this->primaryKey]);
-		}
-		$this->request = $initial;
 		return $result;
 	}
 
@@ -174,7 +180,10 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	* Ovverwrite of the exists() function, to facilitate saves
 	* (assume this is called within the save() function, so existance has already been established)
 	*/
-	public function exists() {
+	public function exists($id = null) {
+		if (!empty($id)) {
+			return true;
+		}
 		if (isset($this->data[$this->primaryKey]) && !empty($this->data[$this->primaryKey])) {
 			return true;
 		}
@@ -202,8 +211,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	*/
 	public function read($fields = null, $id = true) {
 		if (empty($id) || !is_numeric($id)) {
-			$this->errors[] = "Error: Read: invalid ID";
-			return false;
+			return $this->error("Error: Read: invalid ID");
 		}
 		return $this->find('info', $id);
 	}
@@ -211,10 +219,12 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 	/**
 	* Deletes a single Principal
 	* note: hijacked the default functionality to access the datasource directly.
-	* @param boolean $id
+	*
+	* @param int $id
+	* @param boolean $cascade (ignored)
 	* @return bool
 	*/
-	public function delete($id = 0) {
+	public function delete($id = null, $cascade = true) {
 		if (empty($id)) {
 			$id = $this->id;
 		}
@@ -229,10 +239,9 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 			return true;
 		}
 		if (isset($this->response['status']['@code']) && $this->response['status']['@code']=="no-data") {
-    		return true;
-    	}
+			return true;
+		}
 		return false;
-
 	}
 
 	/**
