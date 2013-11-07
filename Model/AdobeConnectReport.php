@@ -105,7 +105,6 @@ class AdobeConnectReport extends AdobeConnectAppModel {
 			$this->request = Set::merge($this->request, $this->parseFiltersFromQuery($query));
 			return $query;
 		} else {
-			debug($results);
 			$return = Set::extract($results, "/report-bulk-consolidated-transactions/row/.");
 			if (empty($return)) {
 				$return = Set::extract($this->response, "/report-bulk-consolidated-transactions/row/.");
