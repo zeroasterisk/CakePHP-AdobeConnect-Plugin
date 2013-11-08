@@ -301,7 +301,6 @@ class AdobeConnectSource extends DataSource {
 	 * @param bool $alsoClearLog false
 	 */
 	public function reset($reason='unknown', $alsoClearErrors=true, $alsoClearLog=false) {
-		debug(compact('reason', 'alsoClearErrors', 'alsoClearLog'));
 		foreach( array('series_id', 'course_id', 'event_id', 'member_id') as $key) {
 			$this->$key = 0;
 		}
@@ -319,8 +318,6 @@ class AdobeConnectSource extends DataSource {
 			$this->log = array();
 		}
 		$this->log[] = array("reset" => $reason);
-		debug($this->stashed);
-		debug($this->userData());;
 		return true;
 	}
 
