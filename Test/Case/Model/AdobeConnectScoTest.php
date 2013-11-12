@@ -196,5 +196,22 @@ class AdobeConnectScoTest extends CakeTestCase {
 	public function testMoveSco() {
 		// create sco, move it, look for it in the new location, look for it in the old location
 	}
+	public function testFindPath() {
+		$tests = $this->AdobeConnectSco->find('search', array(
+			'conditions' => array(
+				'name' => 'test*',
+			),
+			'limit' => 20,
+		));
+		shuffle($tests);
+		foreach (array_slice($tests, 0, 5) as $sco) {
+			$path = $this->AdobeConnectSco->find("path", $sco['AdobeConnectSco']['sco-id']);
+			$this->assertTrue(is_array($path));
+			$this->assertTrue(count($path) > 1);
+			$this->assertEqual(Hash::dimensions($path), 1);
+			$this->assertTrue(Hash::numeric(array_keys($path)));
+			$this->assertFalse(Hash::numeric(array_values($path)));
+		}
+	}
 }
 ?>

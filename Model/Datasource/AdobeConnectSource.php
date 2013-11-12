@@ -500,7 +500,7 @@ class AdobeConnectSource extends DataSource {
 			'password' => $userData['password'],
 			'session' => $userData['sessionKey']
 		));
-		if (isset($response['status']['@code']) && $response['status']['@code'] == "ok") {
+		if (isset($response['status']['code']) && $response['status']['code'] == "ok") {
 			//Mark user as logged in.
 			$userData['isLoggedIn'] = true;
 			return $this->userConfig($userKey, $userData);
@@ -664,29 +664,30 @@ class AdobeConnectSource extends DataSource {
 			return $this->__error('Empty Response.');
 		}
 		$responseArray = (isset($result['results']) && is_array($result['results']) ? $result['results'] : $result);
+		$responseArray = $this->responseCleanAttr($responseArray);
 		# extract status
-		$good = (isset($responseArray['status']['@code']) && $responseArray['status']['@code']=="ok");
+		$good = (isset($responseArray['status']['code']) && $responseArray['status']['code']=="ok");
 		if ($good) {
 			return $responseArray;
 		}
 		# extract errors
 		// no login error, send  'no-login' so we can try again.
-		if (isset($responseArray['status']['@subcode'])) {
-			return $responseArray['status']['@subcode'];
+		if (isset($responseArray['status']['subcode'])) {
+			return $responseArray['status']['subcode'];
 		}
 		$invalid = Set::extract($responseArray, "/status/invalid");
 		if (!empty($invalid)) {
 			foreach ( $invalid as $_invalid ) {
-				$this->__error("INVALID: {$_invalid['invalid']['@field']}: {$_invalid['invalid']['@subcode']}");
+				$this->__error("INVALID: {$_invalid['invalid']['field']}: {$_invalid['invalid']['subcode']}");
 			}
 			return false;
 		}
 		$statusCodes = Set::extract($responseArray, "/status");
 		foreach ( $statusCodes as $statusCode ) {
-			if (isset($statusCode['status']['@subcode'])) {
-				$this->__error("{$statusCode['status']['@code']}: {$statusCode['status']['@subcode']}");
-			} elseif ($statusCode['status']['@code']!='no-data') {
-				$this->__error("CODE: {$statusCode['status']['@code']}");
+			if (isset($statusCode['status']['subcode'])) {
+				$this->__error("{$statusCode['status']['code']}: {$statusCode['status']['subcode']}");
+			} elseif ($statusCode['status']['code']!='no-data') {
+				$this->__error("CODE: {$statusCode['status']['code']}");
 			}
 		}
 		return false;
@@ -710,6 +711,28 @@ class AdobeConnectSource extends DataSource {
 			}
 		}
 		return $data;
+	}
+
+	/**
+	 * Response arrays may have fields/keys with a '@' prefix -- remove those
+	 *
+	 * @param array $array
+	 * @return array $array
+	 */
+	public function responseCleanAttr($array) {
+		if (!is_array($array)) {
+			return $array;
+		}
+		foreach (array_keys($array) as $key) {
+			if (is_array($array[$key])) {
+				$array[$key] = $this->responseCleanAttr($array[$key]);
+			}
+			if (substr(trim($key), 0, 1) == '@') {
+				$array[str_replace('@', '', trim($key))] = $array[$key];
+				unset($array[$key]);
+			}
+		}
+		return $array;
 	}
 
 }

@@ -1,16 +1,16 @@
 <?php
 /**
-* Plugin model for "Adobe Connect Sco".
-*
-* Provides custom find types for the various calls on the web service, mapping
-* familiar CakePHP methods and parameters to the http request params for
-* issuing to the web service.
-*
-* @author Alan Blount <alan@zeroasterisk.com>
-* @link http://zeroasterisk.com
-* @copyright (c) 2011 Alan Blount
-* @license MIT License - http://www.opensource.org/licenses/mit-license.php
-*/
+ * Plugin model for "Adobe Connect Sco".
+ *
+ * Provides custom find types for the various calls on the web service, mapping
+ * familiar CakePHP methods and parameters to the http request params for
+ * issuing to the web service.
+ *
+ * @author Alan Blount <alan@zeroasterisk.com>
+ * @link http://zeroasterisk.com
+ * @copyright (c) 2011 Alan Blount
+ * @license MIT License - http://www.opensource.org/licenses/mit-license.php
+ */
 App::uses('AdobeConnectAppModel', 'AdobeConnect.Model');
 class AdobeConnectSco extends AdobeConnectAppModel {
 
@@ -27,15 +27,15 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	public $useDbConfig = 'adobe_connect';
 
 	/**
-	* default value of "send-email" for the welcome email on new-user-create
-	* @var bool
-	*/
+	 * default value of "send-email" for the welcome email on new-user-create
+	 * @var bool
+	 */
 	public $defaultSendEmailBool = false;
 
 	/**
-	* The fields and their types for the form helper
-	* @var array
-	*/
+	 * The fields and their types for the form helper
+	 * @var array
+	 */
 	public $_schema = array(
 		'sco-id' => array('type' => 'integer', 'length' => '11'),
 		'name' => array('type' => 'string', 'length' => '255'), // The name of the SCO, with or without spaces. Required to create a SCO.
@@ -55,25 +55,25 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		'sco-tag' => array('type' => 'string', 'length' => '255'), // A label for any information you want to record about a course. Use only with courses.
 		'source-sco-id' => array('type' => 'integer', 'length' => '11'), // The unique ID of a template you can use to create a meeting or a piece of content from which you can build a course.
 		'url-path' => array('type' => 'string', 'length' => '255'), // The custom part of the URL to the meeting room that comes after the domain name. The url-path must be unique within the folder. If not specified, the server assigns a value.
-		);
+	);
 
 
 	/**
-	* Set the primaryKey
-	* @var string
-	*/
+	 * Set the primaryKey
+	 * @var string
+	 */
 	public $primaryKey = 'sco-id';
 
 	/**
-	* constants from Connect
-	* @var array
-	*/
+	 * constants from Connect
+	 * @var array
+	 */
 	public $typesWithChildren = array("folder", "curriculum", "event", "meeting", "tree");
 
 	/**
-	* The custom find methods (defined below)
-	* @var array
-	*/
+	 * The custom find methods (defined below)
+	 * @var array
+	 */
 	public $findMethods = array(
 		'search' => true,
 		'contents' => true,
@@ -81,21 +81,21 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		'contents_non_recursive' => true,
 		'info' => true,
 		'path' => true,
-		);
+	);
 
 
 	/**
-	* Creates/Saves a Sco
-	*
-	* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171ddf77-7e45
-	*
-	* You must provide a folder-id or a sco-id, but not both. If you pass a folder-id, sco-update creates a new SCO and returns a sco-id. If the SCO already exists and you pass a sco-id, sco-update updates the metadata describing the SCO.
-	*
-	* @param array $data See Model::save()
-	* @param boolean $validate See Model::save() false
-	* @param array $fieldList See Model::save()
-	* @return boolean
-	*/
+	 * Creates/Saves a Sco
+	 *
+	 * @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171ddf77-7e45
+	 *
+	 * You must provide a folder-id or a sco-id, but not both. If you pass a folder-id, sco-update creates a new SCO and returns a sco-id. If the SCO already exists and you pass a sco-id, sco-update updates the metadata describing the SCO.
+	 *
+	 * @param array $data See Model::save()
+	 * @param boolean $validate See Model::save() false
+	 * @param array $fieldList See Model::save()
+	 * @return boolean
+	 */
 	public function save($data = null, $validate = false, $fieldList = array()) {
 		$initial = $this->request;
 		$this->request = array();
@@ -158,9 +158,9 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	}
 
 	/**
-	* Ovverwrite of the exists() function, to facilitate saves
-	* (assume this is called within the save() function, so existance has already been established)
-	*/
+	 * Ovverwrite of the exists() function, to facilitate saves
+	 * (assume this is called within the save() function, so existance has already been established)
+	 */
 	public function exists($id = null) {
 		if (isset($this->data[$this->primaryKey]) && !empty($this->data[$this->primaryKey])) {
 			return true;
@@ -181,12 +181,12 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	}
 
 	/**
-	* Reads a single Sco
-	*
-	* @param array $fields See Model::read() (ignored)
-	* @param boolean $id See Model::read()
-	* @return array
-	*/
+	 * Reads a single Sco
+	 *
+	 * @param array $fields See Model::read() (ignored)
+	 * @param boolean $id See Model::read()
+	 * @return array
+	 */
 	public function read($fields = null, $id = true) {
 		if (empty($id) || !is_numeric($id)) {
 			return $this->error("AdobeConnectSco::read() invalid ID");
@@ -195,11 +195,11 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	}
 
 	/**
-	* Deletes a single Sco
-	* note: hijacked the default functionality to access the datasource directly.
-	* @param boolean $id
-	* @return bool
-	*/
+	 * Deletes a single Sco
+	 * note: hijacked the default functionality to access the datasource directly.
+	 * @param boolean $id
+	 * @return bool
+	 */
 	public function delete($id = 0, $cascade = true) {
 		if (empty($id)) {
 			$id = $this->id;
@@ -214,14 +214,14 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		if (!empty($response)) {
 			return true;
 		}
-		if (isset($this->response['status']['@code']) && $this->response['status']['@code']=="no-data") {
-    		return true;
-    	}
+		if (isset($this->response['status']['code']) && $this->response['status']['code']=="no-data") {
+			return true;
+		}
 		return false;
 	}
 	/**
-	* Moves an SCO $sco_id to $folder_id
-	**/
+	 * Moves an SCO $sco_id to $folder_id
+	 **/
 	public function move($sco_id, $folder_id) {
 		if (empty($sco_id)) {
 			$sco_id = $this->id;
@@ -237,18 +237,19 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		if (!empty($response)) {
 			return true;
 		}
-		if (isset($this->response['status']['@code']) && $this->response['status']['@code']=="no-data") {
-    		return true;
-    	}
+		if (isset($this->response['status']['code']) && $this->response['status']['code']=="no-data") {
+			return true;
+		}
 		return false;
 	}
+
 	/**
-	* Custom Find: akin to 'first', requires ID for input. see read()
-	* $this->AdobeConnectSco->find('info', 12345);
-	* @param string $state
-	* @param array $query
-	* @param array $results
-	*/
+	 * Custom Find: akin to 'first', requires ID for input. see read()
+	 * $this->AdobeConnectSco->find('info', 12345);
+	 * @param string $state
+	 * @param array $query
+	 * @param array $results
+	 */
 	protected function _findInfo($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
 			$this->request = array("action" => "sco-info");
@@ -288,21 +289,21 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	}
 
 	/**
-	* Custom Find: akin to 'all', allows a simple search, globally.
-	*
-	* The sco-search-by-field action searches the content of some types of SCOs for the query string. The search includes folders, training courses, curriculums, meetings, content, and archives.
-	* To search for multi-word terms with spaces between the words, search only on the first word in the term and use a wildcard at the end.
-	*
-	* $this->AdobeConnectSco->find('search', 'my meeting');
-	* $this->AdobeConnectSco->find('search', array('conditions' => array('name' => 'my meeting')));
-	* // you can specify other filters as secondary conditions (NOTE: SEACH CONDITONS MUST BE FIRST)
-	* $this->AdobeConnectSco->find('search', array('conditions' => array('name' => 'my meeting', 'type' => 'meeting')));
-	* // you can use wildcards (*,?) but you can not start a query with them
-	* $this->AdobeConnectSco->find('search', array('conditions' => array('name' => 'my*meeting', 'type' => 'meeting')));
-	* @param string $state
-	* @param array $query
-	* @param array $results
-	*/
+	 * Custom Find: akin to 'all', allows a simple search, globally.
+	 *
+	 * The sco-search-by-field action searches the content of some types of SCOs for the query string. The search includes folders, training courses, curriculums, meetings, content, and archives.
+	 * To search for multi-word terms with spaces between the words, search only on the first word in the term and use a wildcard at the end.
+	 *
+	 * $this->AdobeConnectSco->find('search', 'my meeting');
+	 * $this->AdobeConnectSco->find('search', array('conditions' => array('name' => 'my meeting')));
+	 * // you can specify other filters as secondary conditions (NOTE: SEACH CONDITONS MUST BE FIRST)
+	 * $this->AdobeConnectSco->find('search', array('conditions' => array('name' => 'my meeting', 'type' => 'meeting')));
+	 * // you can use wildcards (*,?) but you can not start a query with them
+	 * $this->AdobeConnectSco->find('search', array('conditions' => array('name' => 'my*meeting', 'type' => 'meeting')));
+	 * @param string $state
+	 * @param array $query
+	 * @param array $results
+	 */
 	protected function _findSearch($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
 			$this->request = array('action' => 'sco-search-by-field');
@@ -363,14 +364,14 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	}
 
 	/**
-	* Custom Find: akin to 'all', searches within a sco, optionally filter with conditions
-	* routes to recursive or non-recursive
-	* $this->AdobeConnectSco->find('contents', 12345);
-	* $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
-	* @param string $state
-	* @param array $query
-	* @param array $results
-	*/
+	 * Custom Find: akin to 'all', searches within a sco, optionally filter with conditions
+	 * routes to recursive or non-recursive
+	 * $this->AdobeConnectSco->find('contents', 12345);
+	 * $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
+	 * @param string $state
+	 * @param array $query
+	 * @param array $results
+	 */
 	protected function _findContents($state, $query = array(), $results = array()) {
 		if (isset($query['recursive']) && !empty($query['recursive'])) {
 			return $this->_findContentsRecursive($state, $query, $results);
@@ -378,13 +379,13 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		return $this->_findContentsNonRecursive($state, $query, $results);
 	}
 	/**
-	* Custom Find: akin to 'all', searches within a sco, optionally filter with conditions Recursive
-	* $this->AdobeConnectSco->find('contents', 12345);
-	* $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
-	* @param string $state
-	* @param array $query
-	* @param array $results
-	*/
+	 * Custom Find: akin to 'all', searches within a sco, optionally filter with conditions Recursive
+	 * $this->AdobeConnectSco->find('contents', 12345);
+	 * $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
+	 * @param string $state
+	 * @param array $query
+	 * @param array $results
+	 */
 	protected function _findContentsRecursive($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
 			$this->request = array("action" => "sco-expanded-contents");
@@ -416,13 +417,13 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	}
 
 	/**
-	* Custom Find: akin to 'all', searches within a sco, optionally filter with conditions Non Recursive
-	* $this->AdobeConnectSco->find('contents', 12345);
-	* $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
-	* @param string $state
-	* @param array $query
-	* @param array $results
-	*/
+	 * Custom Find: akin to 'all', searches within a sco, optionally filter with conditions Non Recursive
+	 * $this->AdobeConnectSco->find('contents', 12345);
+	 * $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
+	 * @param string $state
+	 * @param array $query
+	 * @param array $results
+	 */
 	protected function _findContentsNonRecursive($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
 			$this->request = array("action" => "sco-contents");
@@ -453,17 +454,17 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	}
 
 	/**
-	* Custom Find: akin to 'all', allows a simple search, globally.  Seems to require two search parameters in the query, optionally filter with conditions
-	*
-	* The sco-search action searches the content of some types of SCOs for the query string. The types of SCOs searched include presentation archives, meeting archives, and the presentation components of a course or curriculum. A presentation that is included in a course returns two sets of results, one for the actual presentation and one for the course. The search does not include the SCO name or any metadata about the SCO stored in the database.
-	* @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171dd627-7d5e
-	*
-	* $this->AdobeConnectSco->find('searchcontent', 'welcome training');
-	* $this->AdobeConnectSco->find('searchcontent', array('query' => 'welcome training', 'conditions' => array('type' => 'content')));
-	* @param string $state
-	* @param array $query
-	* @param array $results
-	*/
+	 * Custom Find: akin to 'all', allows a simple search, globally.  Seems to require two search parameters in the query, optionally filter with conditions
+	 *
+	 * The sco-search action searches the content of some types of SCOs for the query string. The types of SCOs searched include presentation archives, meeting archives, and the presentation components of a course or curriculum. A presentation that is included in a course returns two sets of results, one for the actual presentation and one for the course. The search does not include the SCO name or any metadata about the SCO stored in the database.
+	 * @link http://help.adobe.com/en_US/AcrobatConnectPro/7.5/WebServices/WS26a970dc1da1c212717c4d5b12183254583-8000.html#WS5b3ccc516d4fbf351e63e3d11a171dd627-7d5e
+	 *
+	 * $this->AdobeConnectSco->find('searchcontent', 'welcome training');
+	 * $this->AdobeConnectSco->find('searchcontent', array('query' => 'welcome training', 'conditions' => array('type' => 'content')));
+	 * @param string $state
+	 * @param array $query
+	 * @param array $results
+	 */
 	protected function _findSearchcontent($state, $query = array(), $results = array()) {
 		if ($state == 'before') {
 			$this->request = array("action" => "sco-search");
@@ -495,26 +496,29 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	}
 
 	/**
-	* Custom Find: path (folder heirarchy)
-	*
-	* $this->AdobeConnectSco->find('path', $sco_id);
-	* @param string $state
-	* @param array $query
-	* @param array $results
-	*/
+	 * Custom Find: path (folder heirarchy)
+	 *
+	 * $this->AdobeConnectSco->find('path', $sco_id);
+	 * @param string $state
+	 * @param array $query
+	 * @param array $results
+	 */
 	protected function _findPath($state, $query = array(), $results = array()) {
+		if ($state == 'before') {
+			return $this->_findInfo($state, $query, $results);
+		}
 		$return = $this->_findInfo($state, $query, $results);
 		if (isset($return[$this->alias]['folder-id'])) {
 			$path = array();
 			$node = $return;
 			while (!empty($node)) {
-    			$path[($node[$this->alias]['sco-id'])] = $node[$this->alias]['name'];
-    			if (isset($node[$this->alias]['folder-id']) && !empty($node[$this->alias]['folder-id'])) {
-    				$node = $this->find('info', $node[$this->alias]['folder-id']);
-    			} else {
-    				$node = false;
-    			}
-    		}
+				$path[($node[$this->alias]['sco-id'])] = $node[$this->alias]['name'];
+				if (isset($node[$this->alias]['folder-id']) && !empty($node[$this->alias]['folder-id'])) {
+					$node = $this->find('info', $node[$this->alias]['folder-id']);
+				} else {
+					$node = false;
+				}
+			}
 			return array_reverse($path, true);
 		}
 		return $return;
@@ -522,18 +526,18 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 
 
 	/**
-	* A jankity overwrite of the _findCount method
-	* Needed to clean saves
-	*
-	* @param mixed $conditions
-	* @param mixed $fields
-	* @param mixed $order
-	* @param integer $limit
-	* @param integer $page
-	* @param integer $recursive
-	* @param array $extra
-	* @return array The results of the call to the web service
-	*/
+	 * A jankity overwrite of the _findCount method
+	 * Needed to clean saves
+	 *
+	 * @param mixed $conditions
+	 * @param mixed $fields
+	 * @param mixed $order
+	 * @param integer $limit
+	 * @param integer $page
+	 * @param integer $recursive
+	 * @param array $extra
+	 * @return array The results of the call to the web service
+	 */
 	public function _findCount($state, $query = array(), $results = array()) {
 		$initial = $this->request;
 		$return = $this->_findInfo($state, $query, $results);

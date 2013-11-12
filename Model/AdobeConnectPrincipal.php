@@ -238,7 +238,7 @@ class AdobeConnectPrincipal extends AdobeConnectAppModel {
 		if (!empty($response)) {
 			return true;
 		}
-		if (isset($this->response['status']['@code']) && $this->response['status']['@code']=="no-data") {
+		if (isset($this->response['status']['code']) && $this->response['status']['code']=="no-data") {
 			return true;
 		}
 		return false;

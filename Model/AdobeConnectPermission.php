@@ -117,7 +117,7 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 		$response = $db->request($this, $this->request);
 		// the API response is on this->response (set there by the source)
 		$result = $this->responseCleanAttr($this->response);
-		if (isset($response['status']['@code']) && $response['status']['@code']=='ok') {
+		if (isset($response['status']['code']) && $response['status']['code']=='ok') {
 			return true;
 		}
 		return false;
@@ -201,9 +201,9 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 		);
 		$db = ConnectionManager::getDataSource($this->useDbConfig);
 		$response = $db->request($this, $this->request);
-		if (isset($response['status']['@code']) && $this->response['status']['@code']=="ok") {
+		if (isset($response['status']['code']) && $this->response['status']['code']=="ok") {
 			return true;
-		} elseif (isset($response['status']['@code']) && $this->response['status']['@code']=="no-data") {
+		} elseif (isset($response['status']['code']) && $this->response['status']['code']=="no-data") {
 			return true;
 		}
 		return false;

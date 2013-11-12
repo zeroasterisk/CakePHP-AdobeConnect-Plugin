@@ -23,6 +23,7 @@ class AdobeConnectAppModel extends AppModel {
 	 * @var array
 	 */
 	public $request = array();
+
 	/**
 	 * Since the webservice call returns the results in the current page of the
 	 * result set and the total number of results in the whole results set, we
@@ -37,6 +38,7 @@ class AdobeConnectAppModel extends AppModel {
 	 * @var array
 	 */
 	public $paginate = array();
+
 	/**
 	 * Temporarily stores the results after being fetched during the paginateCount
 	 * method, before returning in the paginate method.
@@ -44,6 +46,7 @@ class AdobeConnectAppModel extends AppModel {
 	 * @var array
 	 */
 	protected $_results = null;
+
 	/**
 	 * Adds the datasource to the Connection Manager's list of sources if it is
 	 * not already there. It would normally be there if you add the datasource
@@ -62,7 +65,6 @@ class AdobeConnectAppModel extends AppModel {
 	 * @param mixed $ds
 	 */
 	public function __construct($id = false, $table = null, $ds = null) {
-
 		// Get the list of datasource that the ConnectionManager is aware of
 		$sources = ConnectionManager::sourceList();
 		// If this model's datasource isn't in it, add it
