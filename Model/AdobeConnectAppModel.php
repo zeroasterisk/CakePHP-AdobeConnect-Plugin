@@ -65,59 +65,44 @@ class AdobeConnectAppModel extends AppModel {
 	 * @param mixed $ds
 	 */
 	public function __construct($id = false, $table = null, $ds = null) {
-		// Get the list of datasource that the ConnectionManager is aware of
-		$sources = ConnectionManager::sourceList();
-		// If this model's datasource isn't in it, add it
-		if (!in_array($this->useDbConfig, $sources)) {
-			// Default minimum config
-			$config = array(
-				'datasource' => 'AdobeConnect.AdobeConnectSource',
-				'salt' => 'AdobeConnect123',
-				'url' => null,
-				'username' => null,
-				'password' => null,
-			);
-			// Try an import the plugins/adobe_connect/config/adobe_connect_config.php file and merge
-			// any default and datasource specific config with the defaults above
-			if (App::import(array('type' => 'File', 'name' => 'AdobeConnect.ADOBECONNECT_CONFIG', 'file' => APP.'config'.DS.'adobe_connect_config.php'))) {
-				$ADOBECONNECT_CONFIG = new ADOBECONNECT_CONFIG();
-				if (isset($ADOBECONNECT_CONFIG->default)) {
-					$config = Set::merge($config, $ADOBECONNECT_CONFIG->default);
-				}
-				if (isset($ADOBECONNECT_CONFIG->{$this->useDbConfig})) {
-					$config = Set::merge($config, $ADOBECONNECT_CONFIG->{$this->useDbConfig});
-				}
-			} elseif (App::import(array('type' => 'File', 'name' => 'AdobeConnect.ADOBECONNECT_CONFIG', 'file' => 'config'.DS.'adobe_connect_config.php'))) {
-				$ADOBECONNECT_CONFIG = new ADOBECONNECT_CONFIG();
-				if (isset($ADOBECONNECT_CONFIG->default)) {
-					$config = Set::merge($config, $ADOBECONNECT_CONFIG->default);
-				}
-				if (isset($ADOBECONNECT_CONFIG->{$this->useDbConfig})) {
-					$config = Set::merge($config, $ADOBECONNECT_CONFIG->{$this->useDbConfig});
-				}
-			}
-			// Add any config from Configure class that you might have added at any
-			// point before the model is instantiated.
-			if (($configureConfig = Configure::read('AdobeConnect.config')) != false) {
-				$config = Set::merge($config, $configureConfig);
-			}
-			// double-check we have required keys
-			if (empty($config['url'])) {
-				trigger_error(__d('adobe_connect', "Invalid AdobeConnectSource Configuration, missing 'url' key. useDbConfig = [{$this->useDbConfig}]"), E_USER_WARNING);
-				die();
-			} elseif (empty($config['username']) || empty($config['password'])) {
-				trigger_error(__d('adobe_connect', "Invalid AdobeConnectSource Configuration, missing 'username' or 'password' key.  This should be the API user account you want to use. useDbConfig = [{$this->useDbConfig}]"), E_USER_WARNING);
-				die();
-			}
-			if ($this->useDbConfig=='default' || $this->useDbConfig=='test' || $this->useDbConfig=='test_suite') {
-				$this->useDbConfig = 'adobe_connect_config';
-			}
-			// Add the datasource, with it's new config, to the ConnectionManager
-			ConnectionManager::create($this->useDbConfig, $config);
-		}
-		$useDbConfig = $this->useDbConfig;
+		$this->useDbConfig = 'adobe_connect';
+		$config = $this->config();
+		ConnectionManager::create($this->useDbConfig, $config);
 		parent::__construct($id, $table, $ds);
-		$this->useDbConfig = $useDbConfig;
+	}
+
+	/**
+	 * Simple function to return the $config array
+	 *
+	 * @param array $config if set, merge with existing array
+	 * @return array $config
+	 */
+	public function config($config = array()) {
+		$loaded = Configure::read('AdobeConnectConfigLoaded');
+		if (empty($loaded)) {
+			Configure::load('adobe_connect');
+			Configure::write('AdobeConnectConfigLoaded', 1);
+		}
+		if (!empty($config)) {
+			$init = Configure::read('AdobeConnect');
+			if (!is_array($init)) {
+				$init = array();
+			}
+			$config = Hash::merge($init, $config);
+			Configure::write(array('AdobeConnect' => $config));
+		}
+		$config = Configure::read('AdobeConnect');
+		if (empty($config)) {
+			throw new OutOfBoundsException('AdobeConnectAppModel::config() unable to load Configuration');
+		}
+		// double-check we have required keys
+		foreach (array('url', 'username', 'password') as $key) {
+			if (empty($config[$key])) {
+				throw new OutOfBoundsException("AdobeConnectAppModel::config() missing [AdobeConnect.{$key}]");
+			}
+		}
+		// return config
+		return $config;
 	}
 
 	/**
@@ -131,19 +116,6 @@ class AdobeConnectAppModel extends AppModel {
 		// TODO convert to exception
 		trigger_error(__d('adobe_connect', $message), E_USER_WARNING);
 		return false;
-	}
-
-	/**
-	 * Simple function to return the $config array
-	 * @param array $config if set, merge with existing array
-	 * @return array $config
-	 */
-	public function config($config = array()) {
-		$db = ConnectionManager::getDataSource($this->useDbConfig);
-		if (!empty($config) && is_array($config)) {
-			$db->config = Set::merge($db->config, $config);
-		}
-		return $db->config;
 	}
 
 	/**

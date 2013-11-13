@@ -19,46 +19,27 @@ class AdobeConnectException extends Exception {
  * @license MIT License - http://www.opensource.org/licenses/mit-license.php
  */
 class AdobeConnectSource extends DataSource {
+
+	/**
+	 * Plugin Version
+	 */
+	protected $version = '2.1';
+
+	/**
+	 * Fake schema placeholder
+	 */
 	protected $_schema = array();
+
+	/**
+	 * Default config - needs to be assigned via AdobeConnectAppModel
+	 * @var array
+	 */
+	public $config = array();
 
 	/**
 	 * Access through $this->stashed, $this->stash, and $this->isStashed
 	 */
 	protected $stashed = array();
-	/**
-	 * Default config
-	 * @var array
-	 */
-	public $config = array(
-		'salt' => 'need-to-configure',
-		'url' => 'need-to-configure',
-		'username' => 'need-to-configure',
-		'password' => 'need-to-configure',
-		'apiUserKey' => 'APIUSER',
-		// other potentially configurable settings
-		'modelConnectApiLog' => 'ConnectApiLog',
-		'secondsServerTimeTolerance' => 900, // 15 minutes
-		'secondsGapPadding' => 180, // 3 minutes
-		// extra configurable parameters
-		'cacheEngine' => false, // specify a cache-engine to reduce API calls
-		'loginPrefix' => null, // prefix for all created user accounts
-		'AdobeConnect-Version' => '0.2',
-		/*
-		// Connect Server Timezone = GMT -6
-		'connect-server-timezone-offset' => -6,
-		// Connect Server Timezone = US/Central | http://www.php.net/manual/en/timezones.others.php
-		'connect-server-timezone' => 'US/Central',
-		 */
-		'sco-ids' => array(
-			'root' => "10000",
-			'seminar-root' => "10005",
-			'template-root' => "10045",
-			'content-root' => "10000",
-			// generic
-			'default-folder' => "10011",
-			'default-template' => "25178",
-		)
-	);
 
 	/**
 	 * placeholder for users logged in with the API
@@ -285,10 +266,12 @@ class AdobeConnectSource extends DataSource {
 	public function  __construct($config) {
 		$this->config = Set::merge($this->config, $config);
 		$this->HttpSocket = new HttpSocket();
-		App::uses($this->config['modelConnectApiLog'], 'Model');
-		$this->modelConnectApiLog = ClassRegistry::init($this->config['modelConnectApiLog']);
-		if (!is_object($this->modelConnectApiLog)) {
-			return $this->cakeError('missingModel', 'Missing "modelConnectApiLog" model: '.$this->config['modelConnectApiLog']);
+		if (!empty($this->config['modelConnectApiLog'])) {
+			App::uses($this->config['modelConnectApiLog'], 'Model');
+			$this->modelConnectApiLog = ClassRegistry::init($this->config['modelConnectApiLog']);
+			if (!is_object($this->modelConnectApiLog)) {
+				return $this->cakeError('missingModel', 'Missing "modelConnectApiLog" model: '.$this->config['modelConnectApiLog']);
+			}
 		}
 		return parent::__construct($config);
 	}
@@ -375,7 +358,7 @@ class AdobeConnectSource extends DataSource {
 		$requestOptions = Set::merge(array(
 			'header' => array(
 				'Connection' => 'close',
-				'User-Agent' => 'CakePHP AdobeConnect Plugin v.'.$this->config['AdobeConnect-Version'],
+				'User-Agent' => 'CakePHP AdobeConnect Plugin v.'.$this->version,
 			)
 		), $requestOptions);
 		$this->HttpSocket->reset();
