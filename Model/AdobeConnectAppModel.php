@@ -119,16 +119,33 @@ class AdobeConnectAppModel extends AppModel {
 	}
 
 	/**
-	 * Simple function to return an activated sessionKey
-	 * NOTE: if you want to initialize a new sessionKey, use initUser() or reset() and then this function
-	 * @param string $userKey (optional)
-	 * @param string $username (optional)
-	 * @param string $password (optional)
+	 * Simple function to return an activated sessionKey for a user/pass
+	 *
+	 * @param string $username
+	 * @param string $password
+	 * @param string $userKey (optional) unique to this user (username used if empty)
+	 * @param boolean force a refresh from the API (default false)
 	 * @return string $sessionKey
 	 */
-	public function getSessionKey($userKey=null, $username=null, $password=null) {
+	public function getSessionKeyForUser($username=null, $password=null, $userKey=null, $refresh=false) {
 		$db = ConnectionManager::getDataSource($this->useDbConfig);
-		return $db->getSessionKey(null, $userKey, $username, $password);
+		if (empty($userKey)) {
+			$userKey = $username;
+		}
+		$db->userConfig($userKey, compact('username', 'password'));
+		return $db->getSessionKey($userKey, $refresh);
+	}
+
+	/**
+	 * Alias to the AdobeConnectSource getSessionKey()
+	 *
+	 * @param string userKey
+	 * @param boolean force a refresh from the API (default false)
+	 * @return mixed string $sessionKey or false if failure
+	 */
+	public function getSessionKey($userKey = null, $refresh = false) {
+		$db = ConnectionManager::getDataSource($this->useDbConfig);
+		return $db->getSessionKey($userKey, $refresh);
 	}
 
 	/**

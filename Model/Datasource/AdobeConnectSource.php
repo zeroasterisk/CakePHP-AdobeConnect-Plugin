@@ -493,6 +493,7 @@ class AdobeConnectSource extends DataSource {
 
 	/**
 	 * Simple function to return an activated sessionKey
+	 *
 	 * @param string userKey
 	 * @param boolean force a refresh from the API (default false)
 	 * @return mixed string $sessionKey or false if failure
@@ -500,9 +501,14 @@ class AdobeConnectSource extends DataSource {
 	public function getSessionKey($userKey = null, $refresh = false) {
 		$cacheKey = $this->getCacheKey($userKey);
 		if ($cacheKey && !$refresh && $userData = Cache::read($cacheKey, $this->config['cacheEngine'])) {
+			// get from cache
 			$this->userConfig($userKey, $userData);
-			return $userData['sessionKey'];
+			// are we logged in already?
+			if (!empty($userData['sessionKey']) && empty($userData['isLoggedIn'])) {
+				return $userData['sessionKey'];
+			}
 		}
+		// attempt api login
 		$userData = $this->getSessionLogin($userKey);
 		if (!$userData) {
 			return $this->__error('Unable to login.');
@@ -571,10 +577,16 @@ class AdobeConnectSource extends DataSource {
 	}
 
 	/**
-	 * userConfig will return the userconfig of either a passed in data user or the default apiUser
-	 * getting and setting user config
-	 * @param string userKey
-	 * @param array data of settables to user
+	 * userConfig will return the userconfig of
+	 * the userKey can be passed in (unique key) or the default = apiUser
+	 *
+	 * this method both is a getter and a setter of user config
+	 *
+	 * @param string $userKey a unique key for "which user are we talking about"
+	 *                        by default it's the $config['apiUserKey']
+	 *                        subsequent to this call, we also have a $this->userKey
+	 *                        which tracks the "current" userKey
+	 * @param array $data of settables to user
 	 * @return array of user data
 	 */
 	public function userConfig($userKey = null, $data = array()) {

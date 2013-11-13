@@ -49,13 +49,18 @@ Or you can initialize the model, like any other Model:
     if (!isset($this->AdobeConnectSco)) {
         App::uses('AdobeConnectSco', 'AdobeConnect.Model');
         $this->AdobeConnectSco = ClassRegistry::init('AdobeConnect.AdobeConnectSco');
-        // just in case you want the config
-        $adobeConnectConfig = $this->AdobeConnectSco->config();
     }
 
 
 Once initilized, you can use it like any other Model.  There are several exposed custom find methods, and custom save/delete functions as well.
 
+    // shared functionality on any of these models
+    // just in case you want the config
+    $adobeConnectConfig = $this->AdobeConnectSco->config();
+    // just in case you want to get a logged in session for a user/pass
+    $session = $this->AdobeConnectSco->getSessionKeyForUser($username, $password);
+
+    // basic CRUD functionality for SCOs (content/meetings/etc)
     $this->AdobeConnectSco->save();
     $this->AdobeConnectSco->delete();
     $this->AdobeConnectSco->find('search', 'my meeting');
@@ -66,14 +71,23 @@ Once initilized, you can use it like any other Model.  There are several exposed
     $this->AdobeConnectSco->find('contents', array('sco-id' => 12345, 'conditions' => array('icon' => 'archive')));
     $this->AdobeConnectSco->find('searchcontent', 'welcome training');
     $this->AdobeConnectSco->find('searchcontent', array('query' => 'welcome training', 'conditions' => array('type' => 'content')));
-    $this->AdobeConnectSco->find('path', $sco_id);
-    $this->AdobeConnectSco->move($sco_id, $folder_id);
+    $this->AdobeConnectSco->find('path', $scoId);
+    // bonus points, move
+    $this->AdobeConnectSco->move($scoId, $folder_id);
+
+    // basic CRUD functionality for Principals (users/groups)
     $this->AdobeConnectPrincipal->save();
     $this->AdobeConnectPrincipal->delete();
     $this->AdobeConnectPrincipal->find('search', 'my login');
     @$this->AdobeConnectPrincipal->find('search', array('conditions' => array('email' => 'myemaildomain.com')));
-    $this->AdobeConnectPermission->get($sco_id, $principal_id);
-    $this->AdobeConnectPermission->assign($sco_id, $principal_id, "view");
+
+    // assigning permissions
+    $this->AdobeConnectPermission->get($scoId, $principalId);
+    $this->AdobeConnectPermission->assign($scoId, $principalId, "view"); // 'host', 'manage', 'mini-host', 'remove', 'denied'
+    $this->AdobeConnectPermission->delete($scoId, $principalId);
+    $this->AdobeConnectPermission->delete($scoId); // removes all rights
+
+    // generating reports
     $this->AdobeConnectReport->find("active");
     $this->AdobeConnectReport->find("bulkconsolidatedtransactions", array('conditions' => array('sco-id' => $scoId, 'principal-id' => $principalId), 'limit' => 100));
     $this->AdobeConnectReport->find("coursestatus", $scoId);
