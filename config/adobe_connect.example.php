@@ -16,6 +16,7 @@ $config = array(
 		'password' => 'xxxxxxxxx',
 		'salt' => 'some-custom-salt',
 		'url' => 'http://connect.example.com/api/xml',
+		'domain' => 'connect.example.com',
 		// specify a cache-engine to reduce API calls (false to disable)
 		'cacheEngine' => 'default',
 		// model we will log all API interactions to (false to disable)
