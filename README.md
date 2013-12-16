@@ -33,6 +33,11 @@ Or you can clone the repository (but don't do this inside of another repository)
    cp Plugin/AdobeConnect/Config/adobe_connect.example.php Config/adobe_connect.php
    edit Config/adobe_connect.php
 
+## Upgrade / API Changes
+
+* 2013-12-16 changed `AdobeConnectPermission->get()` to `AdobeConnectPermission->lookup()` args the same, alias commented out in model
+* 2013-12-16 changed Unit Test config can now be set in the App's config file, as `AdobeConnectTest`
+
 ## Usage
 
 You can specify any of the Models in your controller's $uses array:
