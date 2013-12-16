@@ -24,6 +24,7 @@ class AdobeConnectScoTest extends CakeTestCase {
 	public function startTest($method) {
 		parent::startTest($method);
 		$this->AdobeConnectSco = ClassRegistry::init('AdobeConnect.AdobeConnectSco');
+		$this->AdobeConnectSco->useDbConfig = 'adobe_connect';
 	}
 	public function endTest($method) {
 		parent::endTest($method);

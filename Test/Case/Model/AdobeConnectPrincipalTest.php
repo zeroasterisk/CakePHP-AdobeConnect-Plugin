@@ -20,6 +20,7 @@ class AdobeConnectPrincipalTest extends CakeTestCase {
 	public function startTest($method) {
 		parent::startTest($method);
 		$this->AdobeConnectPrincipal = ClassRegistry::init('AdobeConnect.AdobeConnectPrincipal');
+		$this->AdobeConnectPrincipal->useDbConfig = 'adobe_connect';
 	}
 	public function endTest($method) {
 		parent::endTest($method);

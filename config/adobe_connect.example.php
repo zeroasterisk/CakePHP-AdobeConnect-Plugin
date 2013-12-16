@@ -45,12 +45,34 @@ $config = array(
 		// -------------------------
 		// the base apiUserKey (which is our normal API user)
 		'apiUserKey' => 'APIUSER',
-	)
+	),
+	'AdobeConnectTest' => array(
+		'datasource' => 'AdobeConnect.AdobeConnectSource',
+		'username' => 'apiuser@example.com',
+		'password' => 'xxxxxxxxx',
+		'salt' => 'some-custom-salt',
+		'url' => 'http://dev.connect.example.com/api/xml',
+		'domain' => 'connect.example.com',
+		'cacheEngine' => 'default',
+		'modelConnectApiLog' => 'ConnectApiLog',
+		'loginPrefix' => '',
+		'sco-ids' => array(
+			'root' => "10000",
+			'seminar-root' => "10005",
+			'template-root' => "10045",
+			'content-root' => "10000",
+			'default-folder' => "10039",
+			'default-template' => "49848",
+		),
+		'secondsServerTimeTolerance' => 900, // 15 minutes
+		'secondsGapPadding' => 180, // 3 minutes
+		'apiUserKey' => 'APIUSER',
+	),
 );
 /*
 // customizations based on environment...
 if (Configure::read('env') != 'prod') {
-	$config['AdobeConnect']['url'] = 'http://dev.connect.audiologyonline.com/api/xml';
+	$config['AdobeConnect']['url'] = 'http://dev.connect.example.com/api/xml';
 	$config['AdobeConnect']['loginPrefix'] = 'ENV_' . Configure::read('env') . '_';
 }
 */

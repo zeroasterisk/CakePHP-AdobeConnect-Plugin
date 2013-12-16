@@ -19,8 +19,11 @@ class AdobeConnectPermissionTest extends CakeTestCase {
 	public function startTest($method) {
 		parent::startTest($method);
 		$this->AdobeConnectPermission = ClassRegistry::init('AdobeConnect.AdobeConnectPermission');
+		$this->AdobeConnectPermission->useDbConfig = 'adobe_connect';
 		$this->AdobeConnectSco = ClassRegistry::init('AdobeConnect.AdobeConnectSco');
+		$this->AdobeConnectSco->useDbConfig = 'adobe_connect';
 		$this->AdobeConnectPrincipal = ClassRegistry::init('AdobeConnect.AdobeConnectPrincipal');
+		$this->AdobeConnectPrincipal->useDbConfig = 'adobe_connect';
 	}
 	public function endTest($method) {
 		parent::endTest($method);
@@ -62,19 +65,19 @@ class AdobeConnectPermissionTest extends CakeTestCase {
 		$this->deleteIds[] = $principalId = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
 		foreach ($scos as $sco) {
 			// initially the perms should be false
-			$perms = $this->AdobeConnectPermission->get($sco['AdobeConnectSco']['sco-id'], $principalId);
+			$perms = $this->AdobeConnectPermission->lookup($sco['AdobeConnectSco']['sco-id'], $principalId);
 			$this->assertFalse($perms);
 			// now save the perms
 			$saved = $this->AdobeConnectPermission->assign($sco['AdobeConnectSco']['sco-id'], $principalId, 'view');
 			$this->assertTrue($saved);
 			// now it should be "read"
-			$perms = $this->AdobeConnectPermission->get($sco['AdobeConnectSco']['sco-id'], $principalId);
+			$perms = $this->AdobeConnectPermission->lookup($sco['AdobeConnectSco']['sco-id'], $principalId);
 			$this->assertEqual('view', $perms);
 			// now attempt to assign permissions for all Content values
 			foreach ($permissionOptions as $_perm) {
 				$saved = $this->AdobeConnectPermission->assign($sco['AdobeConnectSco']['sco-id'], $principalId, $_perm);
 				$this->assertTrue($saved);
-				$perms = $this->AdobeConnectPermission->get($sco['AdobeConnectSco']['sco-id'], $principalId);
+				$perms = $this->AdobeConnectPermission->lookup($sco['AdobeConnectSco']['sco-id'], $principalId);
 				$this->assertEqual($_perm, $perms);
 			}
 		}
@@ -103,19 +106,19 @@ class AdobeConnectPermissionTest extends CakeTestCase {
 		$this->deleteIds[] = $principalId = $created[$this->AdobeConnectPrincipal->alias][$this->AdobeConnectPrincipal->primaryKey];
 		foreach ($scos as $sco) {
 			// initially the perms should be false
-			$perms = $this->AdobeConnectPermission->get($sco['AdobeConnectSco']['sco-id'], $principalId);
+			$perms = $this->AdobeConnectPermission->lookup($sco['AdobeConnectSco']['sco-id'], $principalId);
 			$this->assertFalse($perms);
 			// now save the perms
 			$saved = $this->AdobeConnectPermission->assign($sco['AdobeConnectSco']['sco-id'], $principalId, 'view');
 			$this->assertTrue($saved);
 			// now it should be "read"
-			$perms = $this->AdobeConnectPermission->get($sco['AdobeConnectSco']['sco-id'], $principalId);
+			$perms = $this->AdobeConnectPermission->lookup($sco['AdobeConnectSco']['sco-id'], $principalId);
 			$this->assertEqual('view', $perms);
 			// now attempt to assign permissions for all Content values
 			foreach ($permissionOptions as $_perm) {
 				$saved = $this->AdobeConnectPermission->assign($sco['AdobeConnectSco']['sco-id'], $principalId, $_perm);
 				$this->assertTrue($saved);
-				$perms = $this->AdobeConnectPermission->get($sco['AdobeConnectSco']['sco-id'], $principalId);
+				$perms = $this->AdobeConnectPermission->lookup($sco['AdobeConnectSco']['sco-id'], $principalId);
 				if ($_perm == 'remove') {
 					$this->assertFalse($perms);
 				} else {

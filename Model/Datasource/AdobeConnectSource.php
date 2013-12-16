@@ -591,7 +591,7 @@ class AdobeConnectSource extends DataSource {
 	 */
 	public function userConfig($userKey = null, $data = array()) {
 		if (empty($userKey)) {
-			$userKey = $this->config['apiUserKey'];
+			$userKey = (!empty($this->config['apiUserKey']) ? $this->config['apiUserKey'] : 'APIUSER');
 		}
 		$this->userKey = $userKey;
 		//Shortcut to stashed if we aren't passing any new data

@@ -21,6 +21,7 @@ class AdobeConnectAppModelTest extends CakeTestCase {
 	public function startTest($method) {
 		parent::startTest($method);
 		$this->AdobeConnectAppModel = ClassRegistry::init('AdobeConnect.AdobeConnectAppModel');
+		$this->AdobeConnectAppModel->useDbConfig = 'adobe_connect';
 	}
 	public function endTest($method) {
 		parent::endTest($method);

@@ -251,15 +251,27 @@ class AdobeConnectPermission extends AdobeConnectAppModel {
 	/**
 	 * A shortcut function for: $this->find("permissions", array('acl-id' => $scoId, 'principal-id' => $principalId));
 	 *
-	 * $this->get($scoId, $principalId);
+	 * $this->lookup($scoId, $principalId);
 	 *
 	 * @param string $state
 	 * @param array $query
 	 * @param array $results
 	 */
-	public function get($scoId, $principalId) {
+	public function lookup($scoId, $principalId) {
 		return $this->find("permissions", array('acl-id' => $scoId, 'principal-id' => $principalId));
 	}
+
+	/**
+	 * This is a legacy alias for lookup()
+	 *
+	 * @param string $state
+	 * @param array $query
+	 * @param array $results
+	 *-- enable this is you need it --/
+	public function get($scoId, $principalId) {
+		return $this->lookup($scoId, $principalId);
+	}
+	*/
 
 	/**
 	 * A shortcut function for: $this->save();

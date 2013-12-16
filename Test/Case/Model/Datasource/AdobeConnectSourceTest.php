@@ -7,33 +7,23 @@ App::uses('HttpSocketResponse', 'Network/Http');
 App::uses('Xml', 'Utility');
 
 class AdobeConnectSourceTest extends CakeTestCase {
-	public $config = array(
-		'username' => 'admin@audiologyonline.com',
-		'password' => '~br33z3!',
-		'salt' => 'connectSALT$$$',
-		'url' => 'http://dev.connect.audiologyonline.com/api/xml',
-		'cacheEngine' => 'default',
-		'loginPrefix' => 'HIJACKED_temp_',
-		'sco-ids' => array(
-			'root' => "10000",
-			'seminar-root' => "10005",
-			'template-root' => "10045",
-			'content-root' => "10000",
-			'default-folder' => "10039",
-			'default-template' => "49848",
-		)
-	);
-
 	public $fixtures = array(
 		'plugin.AdobeConnect.connect_api_log'
 	);
 
 	function setUp() {
 		parent::setUp();
-		$this->Connect = new AdobeConnectSource($this->config);
+		// get the config from app/Config/
+		Configure::load('adobe_connect');
+		$config = Configure::read('AdobeConnectTest');
+		if (empty($config)) {
+			throw OutOfBoundsException('Unable to test.  Setup AdobeConnectTest Configuration');
+		}
+		$this->Connect = new AdobeConnectSource($config);
 		$this->ConnectApiLog = ClassRegistry::init('ConnectApiLog');
 		//$this->Connect->HttpSocket = $this->getMock('HttpSocket');
 		$this->Model = ClassRegistry::init('AdobeConnect.AdobeConnectSco');
+		$this->Model->useDbConfig = 'adobe_connect';
 	}
 
 	function test_getSessionLogin() {
@@ -74,6 +64,7 @@ class AdobeConnectSourceTest extends CakeTestCase {
 	}
 
 	public function testRequest() {
+		$this->ConnectApiLog->query("truncate {$this->ConnectApiLog->useTable}");
 		$data = array(
 			'action' => 'common-info'
 		);

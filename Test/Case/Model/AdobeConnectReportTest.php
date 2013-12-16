@@ -19,8 +19,11 @@ class AdobeConnectReportTest extends CakeTestCase {
 	public function startTest($method) {
 		parent::startTest($method);
 		$this->AdobeConnectReport = ClassRegistry::init('AdobeConnect.AdobeConnectReport');
+		$this->AdobeConnectReport->useDbConfig = 'adobe_connect';
 		$this->AdobeConnectSco = ClassRegistry::init('AdobeConnect.AdobeConnectSco');
+		$this->AdobeConnectSco->useDbConfig = 'adobe_connect';
 		$this->AdobeConnectPrincipal = ClassRegistry::init('AdobeConnect.AdobeConnectPrincipal');
+		$this->AdobeConnectPrincipal->useDbConfig = 'adobe_connect';
 	}
 	public function endTest($method) {
 		parent::endTest($method);

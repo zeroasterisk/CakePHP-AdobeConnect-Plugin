@@ -82,7 +82,7 @@ Once initilized, you can use it like any other Model.  There are several exposed
     @$this->AdobeConnectPrincipal->find('search', array('conditions' => array('email' => 'myemaildomain.com')));
 
     // assigning permissions
-    $this->AdobeConnectPermission->get($scoId, $principalId);
+    $this->AdobeConnectPermission->lookup($scoId, $principalId);
     $this->AdobeConnectPermission->assign($scoId, $principalId, "view"); // 'host', 'manage', 'mini-host', 'remove', 'denied'
     $this->AdobeConnectPermission->delete($scoId, $principalId);
     $this->AdobeConnectPermission->delete($scoId); // removes all rights
