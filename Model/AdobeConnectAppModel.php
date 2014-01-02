@@ -132,8 +132,18 @@ class AdobeConnectAppModel extends AppModel {
 		if (empty($userKey)) {
 			$userKey = $username;
 		}
+		// when we do this, we don't want to change all future API calls to
+		//   work from the logged in userKey, we usually are just grabbing the
+		//   newly logged in session and redirecting.
+		$initUserKey = $db->userKey;
+		// setup for login
 		$db->userConfig($userKey, compact('username', 'password'));
-		return $db->getSessionKey($userKey, $refresh);
+		// login
+		$sessionKey = $db->getSessionKey($userKey, $refresh);
+		// reset back to default API userKey
+		$db->userKey = $initUserKey;
+		// return $sessionKey
+		return $sessionKey;
 	}
 
 	/**

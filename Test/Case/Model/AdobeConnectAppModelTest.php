@@ -47,6 +47,25 @@ class AdobeConnectAppModelTest extends CakeTestCase {
 		$this->assertEqual($response, $response2);
 	}
 
+	public function testgetSessionKeyForUser() {
+		$username = Configure::read('AdobeConnectTest.testUser.username');
+		$password = Configure::read('AdobeConnectTest.testUser.password');
+		$response = $this->AdobeConnectAppModel->getSessionKeyForUser($username, $password);
+		$this->assertTrue(!empty($response));
+		$this->assertTrue(is_string($response));
+		$this->assertTrue(strpos($response, "breez")!==false);
+		$response2 = $this->AdobeConnectAppModel->getSessionKeyForUser($username, $password);
+		$this->assertEqual($response, $response2);
+		// double-checking that we didn't walk on the APIUSER session at all
+		$db = ConnectionManager::getDataSource($this->AdobeConnectAppModel->useDbConfig);
+		$apiuser = $db->stashed('APIUSER');
+		$testuser = $db->stashed($username);
+		$this->assertTrue($apiuser['isLoggedIn']);
+		$this->assertTrue($testuser['isLoggedIn']);
+		$this->assertEqual($response, $testuser['sessionKey']);
+		$this->assertNotEqual($apiuser['sessionKey'], $testuser['sessionKey']);
+	}
+
 	public function testgetConnectTimeOffset() {
 		$response = $this->AdobeConnectAppModel->getConnectTimeOffset();
 		$this->assertTrue(!empty($response));

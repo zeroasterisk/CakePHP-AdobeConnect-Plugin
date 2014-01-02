@@ -39,13 +39,13 @@ class AdobeConnectSource extends DataSource {
 	/**
 	 * Access through $this->stashed, $this->stash, and $this->isStashed
 	 */
-	protected $stashed = array();
+	public $stashed = array();
 
 	/**
 	 * placeholder for users logged in with the API
 	 * @var array
 	 */
-	protected $userKey = null;
+	public $userKey = null;
 
 	/**
 	 * constants from Connect

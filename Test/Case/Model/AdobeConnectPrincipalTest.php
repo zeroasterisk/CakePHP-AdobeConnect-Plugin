@@ -132,4 +132,4 @@ class AdobeConnectPrincipalTest extends CakeTestCase {
 		}
 	}
 }
-?>
+
