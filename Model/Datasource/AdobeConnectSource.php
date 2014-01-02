@@ -290,6 +290,9 @@ class AdobeConnectSource extends DataSource {
 		$this->stashed = array();
 		$this->config['autoreset'] = false;
 		$this->config['autologin'] = false;
+		// just to be safe, we are going to reset the config array too
+		$this->userKey = 'APIUSER2';
+		$this->config['apiUserKey'] = $this->userKey;
 		if ($this->config['cacheEngine']) {
 			Cache::delete($this->getCacheKey(), $this->config['cacheEngine']);
 		}
@@ -387,6 +390,7 @@ class AdobeConnectSource extends DataSource {
 		if ($responseArray === 'no-login' && empty($this->autoFailedSession)) {
 			$this->autoFailedSession = true;
 			$this->reset("No Login after action - automatic reset and re-attempt");
+			$data['session'] = $this->getSessionKey($this->userKey);
 			return $this->request($model_or_null, $data, $requestOptions);
 		}
 
@@ -465,8 +469,10 @@ class AdobeConnectSource extends DataSource {
 		$userData = $this->userConfig($userKey);
 		return 'adobe_connect_session_'.strtolower($userData['userKey']);
 	}
+
 	/**
 	 * get the user session login
+	 *
 	 * @param string userKey
 	 * @param boolean force a refresh from the API (default false)
 	 * @return mixed userData of logged in user or false if failure
@@ -484,7 +490,7 @@ class AdobeConnectSource extends DataSource {
 			'session' => $userData['sessionKey']
 		));
 		if (isset($response['status']['code']) && $response['status']['code'] == "ok") {
-			//Mark user as logged in.
+			// user is logged in
 			$userData['isLoggedIn'] = true;
 			return $this->userConfig($userKey, $userData);
 		}
@@ -510,7 +516,7 @@ class AdobeConnectSource extends DataSource {
 		}
 		// attempt api login
 		$userData = $this->getSessionLogin($userKey);
-		if (!$userData) {
+		if (empty($userData['isLoggedIn'])) {
 			return $this->__error('Unable to login.');
 		}
 		if ($cacheKey) {
