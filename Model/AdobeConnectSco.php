@@ -149,12 +149,89 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			$this->request = $initial;
 			return false;
 		}
+		/////
+		//Seminar Sessions
+		$this->saveSeminarSession($data[$this->primaryKey], $data['date-begin'], $data['date-end']);
+		/////
 		$this->id = $result['sco'][$this->primaryKey];
 		$this->setInsertID($this->id);
 		$result[$this->alias][$this->primaryKey] = $this->id;
 		$result[$this->alias] = array_merge($result['sco'], $result[$this->alias]);
 		unset($result['sco']);
 		return $result;
+	}
+
+	public function saveSeminarSession($seminar_sco_id, $date_begin, $date_end) {
+		//Get quota for seminar room
+		/*You can obtain the Seminar License quotas for your different licenses by running this API call: https://{myConnectURL}/api/xml?action=sco-seminar-licenses-list&sco-id=XXXXXXX
+		where sco-id = the sco-id of the SHARED SEMINARS folder (or the ‘seminars’ tree-id of the shortcut ‘seminars’).*/
+		$config = $this->config();
+		$quota = $this->getRoomQuota($seminar_sco_id);
+
+		//First we request list of sessions for this seminar room
+		$seminar_sessions = $this->getSeminarSessions($seminar_sco_id);
+		pr($seminar_sessions);
+
+		//Create SCO for session: action=sco-update&type=5&name=MySeminarSession&folder-id=30009
+		//$result = $this->request(array('action' => 'sco-update', 'type' => 'seminarsession', 'name' => 'session1', 'folder-id' => $seminar_sco_id));
+		$data = array('type' => 'seminarsession', 'name' => 'session2015', 'folder-id' => $seminar_sco_id);
+		$this->request = $data;
+		$this->request['action'] = "sco-update";
+		$result = parent::save(array($this->alias => $data), false, array());
+		// the API response is on this->response (set there by the source)
+		$result = $this->responseCleanAttr($this->response);
+		pr($result);
+		$session_sco_id = $result['sco']['sco-id'];
+		//$session_sco_id = 13519326;
+		
+		//Set seminar session time
+		//action=seminar-session-sco-update&sco-id=30010&source-sco-id=30009&parent-acl-id=30009&date-begin=2013-08-30T14:00:00.000-07:00&date-end=2013-08-30T15:00:10.000-07:00
+		$data = array('sco-id' => $session_sco_id, 'source-sco-id' => $seminar_sco_id, 'parent-acl-id' => $seminar_sco_id, 'date-begin' => $date_begin, 'date-end' => $date_end);
+		$this->request = $data;
+		$this->request['action'] = "seminar-session-sco-update";
+		$result = parent::save(array($this->alias => $data), false, array());
+		pr($result);
+
+		//Set session load
+		//action=acl-field-update&acl-id=30010&field-id=311&value=25
+		$data = array('acl-id' => $session_sco_id, 'field-id' => 311, 'value' => $quota);
+		$this->request = $data;
+		$this->request['action'] = "acl-field-update";
+		$result = parent::save(array($this->alias => $data), false, array());
+		pr($result);
+
+
+		//Request list of sessions for this seminar room
+		$seminar_sessions = $this->getSeminarSessions($seminar_sco_id);
+		pr($seminar_sessions);
+		die();
+
+
+	}
+
+	public function getSeminarSessions($seminar_sco_id) {
+		//https://sample.com/api/xml?action=sco-session-seminar-list&sco-id=11903
+		return $this->request(array('action' => 'sco-session-seminar-list', 'sco-id' => $seminar_sco_id));
+		
+	}
+
+	public function getNextSeminarSession($seminar_sco_id) {
+		//https://sample.com/api/xml?action=get-next-seminar-event-session&sco-id=11903
+		return $this->request(array('action' => 'get-next-seminar-event-session', 'sco-id' => $seminar_sco_id));
+		
+	}
+
+	public function getRoomQuota($seminar_sco_id) {
+		$sco_info = $this->find('info', $seminar_sco_id);
+		$config = $this->config();
+		$seminar_root_sco_id = $config['sco-ids']['seminar-root'];
+		$seminar_licenses = $this->request(array('action' => 'sco-seminar-licenses-list', 'sco-id' => $seminar_root_sco_id,));
+		foreach ($seminar_licenses['seminar-licenses']['sco'] as $license) {
+			if ($license['sco-id'] == $sco_info['AdobeConnectSco']['folder-id']) {
+				return $license['quota'];
+			}
+		}
+		return 0;
 	}
 
 	/**
