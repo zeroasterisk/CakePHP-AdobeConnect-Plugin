@@ -149,12 +149,12 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			$this->request = $initial;
 			return false;
 		}
-		/////
-		//Seminar Sessions
-		if ($this->saveSeminarSession($data[$this->primaryKey], $data['date-begin'], $data['date-end']) === false) {
-			return $this->error("AdobeConnectSco::save() Error creating Seminar Room Session details.");
+		if (!empty($data['type']) && !empty($data['icon']) && $data['type'] == 'meeting' && $data['icon'] == 'seminar') {
+			//Seminar Sessions
+			if ($this->saveSeminarSession($result['sco'][$this->primaryKey], $data['date-begin'], $data['date-end']) === false) {
+				return $this->error("AdobeConnectSco::save() Error creating Seminar Room Session details.");
+			}
 		}
-		/////
 		$this->id = $result['sco'][$this->primaryKey];
 		$this->setInsertID($this->id);
 		$result[$this->alias][$this->primaryKey] = $this->id;
@@ -168,6 +168,9 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		/*You can obtain the Seminar License quotas for your different licenses by running this API call: https://{myConnectURL}/api/xml?action=sco-seminar-licenses-list&sco-id=XXXXXXX
 		where sco-id = the sco-id of the SHARED SEMINARS folder (or the ‘seminars’ tree-id of the shortcut ‘seminars’).*/
 		$config = $this->config();
+		if (empty($config['connectVersion']) || (!empty($config['connectVersion']) && $config['connectVersion'] <= 9)) {
+			return true;
+		}
 		$quota = $this->getRoomQuota($seminar_sco_id);
 		$session_name = $seminar_sco_id."_session";  //Allowing for only one session name per seminar room.
 
@@ -190,7 +193,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 				return false;
 			}
 		}
-		
+
 		//Set seminar session time
 		//action=seminar-session-sco-update&sco-id=30010&source-sco-id=30009&parent-acl-id=30009&date-begin=2013-08-30T14:00:00.000-07:00&date-end=2013-08-30T15:00:10.000-07:00
 		$data = array('sco-id' => $session_sco_id, 'source-sco-id' => $seminar_sco_id, 'parent-acl-id' => $seminar_sco_id, 'date-begin' => $date_begin, 'date-end' => $date_end);
@@ -201,7 +204,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		if (empty($result['status']['code']) && $result['status']['code'] != 'ok') {
 			return false;
 		}
-
+		
 		//Set session load
 		//action=acl-field-update&acl-id=30010&field-id=311&value=25
 		$data = array('acl-id' => $session_sco_id, 'field-id' => 311, 'value' => $quota);
@@ -210,10 +213,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		$result = parent::save(array($this->alias => $data), false, array());
 
 		//Verify Next Seminar Session is the one we just worked with
-		$seminar_sessions = $this->getSeminarSessions($seminar_sco_id);
-		pr($seminar_sessions);
 		$seminar_session = $this->getNextSeminarSession($seminar_sco_id);
-		pr($seminar_session);
 		if (!empty($seminar_session['nextsession']) 
 			&& ($seminar_session['nextsession']['session-name'] == $session_name)
 			&& (strtotime($seminar_session['nextsession']['datebegin']) === strtotime($date_begin))) {
@@ -258,9 +258,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 					$data = array('sco-id' => $session['sco-id']);
 					$this->request = $data;
 					$this->request['action'] = "sco-delete";
-					pr($this->request);
 					$result = parent::save(array($this->alias => $data), false, array());
-					pr($this->response);
 				}
 			}
 		}
