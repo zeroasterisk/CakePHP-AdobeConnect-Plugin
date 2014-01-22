@@ -151,7 +151,9 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		}
 		/////
 		//Seminar Sessions
-		$this->saveSeminarSession($data[$this->primaryKey], $data['date-begin'], $data['date-end']);
+		if ($this->saveSeminarSession($data[$this->primaryKey], $data['date-begin'], $data['date-end']) === false) {
+			return $this->error("AdobeConnectSco::save() Error creating Seminar Room Session details.");
+		}
 		/////
 		$this->id = $result['sco'][$this->primaryKey];
 		$this->setInsertID($this->id);
@@ -167,22 +169,27 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		where sco-id = the sco-id of the SHARED SEMINARS folder (or the ‘seminars’ tree-id of the shortcut ‘seminars’).*/
 		$config = $this->config();
 		$quota = $this->getRoomQuota($seminar_sco_id);
+		$session_name = $seminar_sco_id."_session";  //Allowing for only one session name per seminar room.
 
-		//First we request list of sessions for this seminar room
-		$seminar_sessions = $this->getSeminarSessions($seminar_sco_id);
-		pr($seminar_sessions);
+		//Check for existing session with this name
+		$session_sco_id = $this->getSeminarSessionByName($seminar_sco_id, $session_name);
+		//Delete other sessions related to this seminar room to clear things out while excluding our current session
+		$this->purgeSeminarSessions($seminar_sco_id, $session_sco_id);
 
 		//Create SCO for session: action=sco-update&type=5&name=MySeminarSession&folder-id=30009
-		//$result = $this->request(array('action' => 'sco-update', 'type' => 'seminarsession', 'name' => 'session1', 'folder-id' => $seminar_sco_id));
-		$data = array('type' => 'seminarsession', 'name' => 'session2015', 'folder-id' => $seminar_sco_id);
-		$this->request = $data;
-		$this->request['action'] = "sco-update";
-		$result = parent::save(array($this->alias => $data), false, array());
-		// the API response is on this->response (set there by the source)
-		$result = $this->responseCleanAttr($this->response);
-		pr($result);
-		$session_sco_id = $result['sco']['sco-id'];
-		//$session_sco_id = 13519326;
+		if (empty($session_sco_id)) {
+			//$result = $this->request(array('action' => 'sco-update', 'type' => 'seminarsession', 'name' => 'session1', 'folder-id' => $seminar_sco_id));
+			$data = array('type' => 'seminarsession', 'name' => $session_name, 'folder-id' => $seminar_sco_id);
+			$this->request = $data;
+			$this->request['action'] = "sco-update";
+			$result = parent::save(array($this->alias => $data), false, array());
+			// the API response is on this->response (set there by the source)
+			$result = $this->responseCleanAttr($this->response);
+			$session_sco_id = (!empty($result['sco']['sco-id']) ? $result['sco']['sco-id'] : 0);
+			if (empty($session_sco_id)) {
+				return false;
+			}
+		}
 		
 		//Set seminar session time
 		//action=seminar-session-sco-update&sco-id=30010&source-sco-id=30009&parent-acl-id=30009&date-begin=2013-08-30T14:00:00.000-07:00&date-end=2013-08-30T15:00:10.000-07:00
@@ -190,7 +197,10 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		$this->request = $data;
 		$this->request['action'] = "seminar-session-sco-update";
 		$result = parent::save(array($this->alias => $data), false, array());
-		pr($result);
+		$result = $this->responseCleanAttr($this->response);
+		if (empty($result['status']['code']) && $result['status']['code'] != 'ok') {
+			return false;
+		}
 
 		//Set session load
 		//action=acl-field-update&acl-id=30010&field-id=311&value=25
@@ -198,27 +208,63 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		$this->request = $data;
 		$this->request['action'] = "acl-field-update";
 		$result = parent::save(array($this->alias => $data), false, array());
-		pr($result);
 
-
-		//Request list of sessions for this seminar room
+		//Verify Next Seminar Session is the one we just worked with
 		$seminar_sessions = $this->getSeminarSessions($seminar_sco_id);
 		pr($seminar_sessions);
-		die();
-
-
+		$seminar_session = $this->getNextSeminarSession($seminar_sco_id);
+		pr($seminar_session);
+		if (!empty($seminar_session['nextsession']) 
+			&& ($seminar_session['nextsession']['session-name'] == $session_name)
+			&& (strtotime($seminar_session['nextsession']['datebegin']) === strtotime($date_begin))) {
+				return true;
+		} else {
+				return false;
+		}
 	}
 
 	public function getSeminarSessions($seminar_sco_id) {
 		//https://sample.com/api/xml?action=sco-session-seminar-list&sco-id=11903
 		return $this->request(array('action' => 'sco-session-seminar-list', 'sco-id' => $seminar_sco_id));
-		
+	}
+
+	public function getSeminarSessionByName($seminar_sco_id, $session_name) {
+		$sessions = $this->getSeminarSessions($seminar_sco_id);
+		if (empty($sessions['session-seminar-list']['sco'])) {
+			return false;
+		} else {
+			foreach ($sessions['session-seminar-list']['sco'] as $session) {
+				if ($session['name'] == $session_name) {
+					return $session['sco-id'];
+				}
+			}
+		}
+		return false;
 	}
 
 	public function getNextSeminarSession($seminar_sco_id) {
 		//https://sample.com/api/xml?action=get-next-seminar-event-session&sco-id=11903
 		return $this->request(array('action' => 'get-next-seminar-event-session', 'sco-id' => $seminar_sco_id));
-		
+	} 
+
+	public function purgeSeminarSessions($seminar_sco_id, $exclude_sco_id=false) {
+		$sessions = $this->getSeminarSessions($seminar_sco_id);
+		if (empty($sessions['session-seminar-list']['sco'])) {
+			return false;
+		} else {
+			foreach ($sessions['session-seminar-list']['sco'] as $session) {
+				if ($session['type'] == 'seminarsession' && $session['sco-id'] !== $exclude_sco_id && !empty($session['sco-id'])) {
+					//Delete other sessions to keep them from blocking any time updates
+					$data = array('sco-id' => $session['sco-id']);
+					$this->request = $data;
+					$this->request['action'] = "sco-delete";
+					pr($this->request);
+					$result = parent::save(array($this->alias => $data), false, array());
+					pr($this->response);
+				}
+			}
+		}
+		return true;
 	}
 
 	public function getRoomQuota($seminar_sco_id) {
