@@ -181,7 +181,6 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 
 		//Create SCO for session: action=sco-update&type=5&name=MySeminarSession&folder-id=30009
 		if (empty($session_sco_id)) {
-			//$result = $this->request(array('action' => 'sco-update', 'type' => 'seminarsession', 'name' => 'session1', 'folder-id' => $seminar_sco_id));
 			$data = array('type' => 'seminarsession', 'name' => $session_name, 'folder-id' => $seminar_sco_id);
 			$this->request = $data;
 			$this->request['action'] = "sco-update";
