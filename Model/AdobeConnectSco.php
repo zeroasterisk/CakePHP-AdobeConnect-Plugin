@@ -152,7 +152,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		if (!empty($data['type']) && !empty($data['icon']) && $data['type'] == 'meeting' && $data['icon'] == 'seminar') {
 			//Seminar Sessions
 			if ($this->saveSeminarSession($result['sco'][$this->primaryKey], $data['date-begin'], $data['date-end']) === false) {
-				return $this->error("AdobeConnectSco::save() Error creating Seminar Room Session details.");
+				return false;
 			}
 		}
 		$this->id = $result['sco'][$this->primaryKey];
