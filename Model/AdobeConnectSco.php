@@ -233,7 +233,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			return false;
 		} else {
 			foreach ($sessions['session-seminar-list']['sco'] as $session) {
-				if ($session['name'] == $session_name) {
+				if (!empty($session['name']) && ($session['name'] == $session_name)) {
 					return $session['sco-id'];
 				}
 			}
@@ -252,7 +252,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			return false;
 		} else {
 			foreach ($sessions['session-seminar-list']['sco'] as $session) {
-				if ($session['type'] == 'seminarsession' && $session['sco-id'] !== $exclude_sco_id && !empty($session['sco-id'])) {
+				if (!empty($session['type']) && !empty($session['sco-id']) && $session['type'] == 'seminarsession' && $session['sco-id'] !== $exclude_sco_id) {
 					//Delete other sessions to keep them from blocking any time updates
 					$data = array('sco-id' => $session['sco-id']);
 					$this->request = $data;
