@@ -206,10 +206,10 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		
 		//Set session load
 		//action=acl-field-update&acl-id=30010&field-id=311&value=25
-		$data = array('acl-id' => $session_sco_id, 'field-id' => 311, 'value' => $quota);
-		$this->request = $data;
-		$this->request['action'] = "acl-field-update";
-		$result = parent::save(array($this->alias => $data), false, array());
+		$result = $this->request(array('action' => 'acl-field-update', 'acl-id' => $session_sco_id, 'field-id' => 311, 'value' => $quota));
+		if (isset($result['status']['code']) && $result['status']['code'] != 'ok') {
+			return false;
+		}
 
 		//Verify Next Seminar Session is the one we just worked with
 		$seminar_session = $this->getNextSeminarSession($seminar_sco_id);
