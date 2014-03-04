@@ -173,11 +173,13 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		}
 		$quota = $this->getRoomQuota($seminar_sco_id);
 		$session_name = $seminar_sco_id."_session";  //Allowing for only one session name per seminar room.
-
 		//Check for existing session with this name
 		$session_sco_id = $this->getSeminarSessionByName($seminar_sco_id, $session_name);
-		//Delete other sessions related to this seminar room to clear things out while excluding our current session
-		$this->purgeSeminarSessions($seminar_sco_id, $session_sco_id);
+		if (time()-(60*60*24) < strtotime($date_begin)) {
+			//if the event is a future event starting before 24 hours ago
+			//Delete other sessions related to this seminar room to clear things out while excluding our current session
+			$this->purgeSeminarSessions($seminar_sco_id, $session_sco_id);
+		}
 
 		//Create SCO for session: action=sco-update&type=5&name=MySeminarSession&folder-id=30009
 		if (empty($session_sco_id)) {
@@ -268,7 +270,19 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		$sco_info = $this->find('info', $seminar_sco_id);
 		$config = $this->config();
 		$seminar_root_sco_id = $config['sco-ids']['seminar-root'];
+		$cacheKey = "AdobeConnect_quotas_$seminar_root_sco_id";
+		if (($seminar_licenses = Cache::read($cacheKey)) == false) {
+			$seminar_licenses = $this->request(array('action' => 'sco-seminar-licenses-list', 'sco-id' => $seminar_root_sco_id,));
+			Cache::write($cacheKey, $seminar_licenses);
+		}
+		foreach ($seminar_licenses['seminar-licenses']['sco'] as $license) {
+			if ($license['sco-id'] == $sco_info['AdobeConnectSco']['folder-id']) {
+				return $license['quota'];
+			}
+		}
+		//Not found in cached version.  Pull fresh
 		$seminar_licenses = $this->request(array('action' => 'sco-seminar-licenses-list', 'sco-id' => $seminar_root_sco_id,));
+		Cache::write($cacheKey, $seminar_licenses);
 		foreach ($seminar_licenses['seminar-licenses']['sco'] as $license) {
 			if ($license['sco-id'] == $sco_info['AdobeConnectSco']['folder-id']) {
 				return $license['quota'];
