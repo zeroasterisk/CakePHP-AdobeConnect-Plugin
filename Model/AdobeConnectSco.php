@@ -163,16 +163,31 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		return $result;
 	}
 
+	/**
+	 * Adobe Connect 9.1 introduced a new Seminar Room Session layer
+	 * http://blogs.adobe.com/connectsupport/adobe-connect-9-1-seminar-session-creation-via-the-xml-api/
+	 *
+	 * Sessions now have to adhere to quotas:
+	 *   You can obtain the Seminar License quotas for your different licenses by running this API call:
+	 *   https://{myConnectURL}/api/xml?action=sco-seminar-licenses-list&sco-id=XXXXXXX
+	 *   where sco-id = the sco-id of the SHARED SEMINARS folder (or the 'seminars' tree-id of the shortcut 'seminars').
+	 *   see: $quota = $this->getRoomQuota($seminar_sco_id);
+	 *
+	 * @param int $seminar_sco_id Meeting's SCO ID, inside the Seminar Room
+	 * @param string $date_begin
+	 * @param string $date_end
+	 */
 	public function saveSeminarSession($seminar_sco_id, $date_begin, $date_end) {
 		//Get quota for seminar room
-		/*You can obtain the Seminar License quotas for your different licenses by running this API call: https://{myConnectURL}/api/xml?action=sco-seminar-licenses-list&sco-id=XXXXXXX
-		where sco-id = the sco-id of the SHARED SEMINARS folder (or the ‘seminars’ tree-id of the shortcut ‘seminars’).*/
 		$config = $this->config();
 		if (empty($config['connectVersion']) || (!empty($config['connectVersion']) && $config['connectVersion'] <= 9)) {
 			return true;
 		}
 		$quota = $this->getRoomQuota($seminar_sco_id);
-		$session_name = $seminar_sco_id."_session";  //Allowing for only one session name per seminar room.
+
+		//Allowing for only one session name per seminar room.
+		$session_name = $seminar_sco_id."_session";
+
 		//Check for existing session with this name
 		$session_sco_id = $this->getSeminarSessionByName($seminar_sco_id, $session_name);
 		if (time()-(60*60*24) < strtotime($date_begin)) {
@@ -205,7 +220,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		if (empty($result['status']['code']) && $result['status']['code'] != 'ok') {
 			return false;
 		}
-		
+
 		//Set session load
 		//action=acl-field-update&acl-id=30010&field-id=311&value=25
 		$result = $this->request(array('action' => 'acl-field-update', 'acl-id' => $session_sco_id, 'field-id' => 311, 'value' => $quota));
@@ -215,7 +230,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 
 		//Verify Next Seminar Session is the one we just worked with
 		$seminar_session = $this->getNextSeminarSession($seminar_sco_id);
-		if (!empty($seminar_session['nextsession']) 
+		if (!empty($seminar_session['nextsession'])
 			&& ($seminar_session['nextsession']['session-name'] == $session_name)
 			&& (strtotime($seminar_session['nextsession']['datebegin']) === strtotime($date_begin))) {
 				return true;
@@ -246,7 +261,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	public function getNextSeminarSession($seminar_sco_id) {
 		//https://sample.com/api/xml?action=get-next-seminar-event-session&sco-id=11903
 		return $this->request(array('action' => 'get-next-seminar-event-session', 'sco-id' => $seminar_sco_id));
-	} 
+	}
 
 	public function purgeSeminarSessions($seminar_sco_id, $exclude_sco_id=false) {
 		$sessions = $this->getSeminarSessions($seminar_sco_id);
