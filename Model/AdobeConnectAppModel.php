@@ -257,6 +257,14 @@ class AdobeConnectAppModel extends AppModel {
 	}
 
 	/**
+	 * Overwrite of the query() function
+	 */
+	public function query($sql) {
+		debug(compact('sql'));
+		throw new OutOfBoundsException("Should not have attempted {$this->alias}->query()");
+	}
+
+	/**
 	 * Overwrite of the exists() function
 	 * means everything is a create() / new
 	 *

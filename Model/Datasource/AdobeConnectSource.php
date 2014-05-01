@@ -339,8 +339,8 @@ class AdobeConnectSource extends DataSource {
 			'action' => 'unknown',
 		), $data);
 		if ($data['action'] == "unknown") {
-			$this->__error("$alias::request: missing action: ".json_encode($data));
-			trigger_error(__d('adobe_connect', $error), E_USER_WARNING);
+			$this->__error("$alias::request: missing action: " . json_encode($data));
+			throw new OutOfBoundsException("$alias::request: missing action " . json_encode($data));
 			return false;
 		}
 		if (empty($data['session']) && $data['action'] != 'common-info') {
@@ -510,7 +510,7 @@ class AdobeConnectSource extends DataSource {
 			// get from cache
 			$this->userConfig($userKey, $userData);
 			// are we logged in already?
-			if (!empty($userData['sessionKey']) && empty($userData['isLoggedIn'])) {
+			if (!empty($userData['sessionKey']) && !empty($userData['isLoggedIn'])) {
 				return $userData['sessionKey'];
 			}
 		}
@@ -734,6 +734,14 @@ class AdobeConnectSource extends DataSource {
 			}
 		}
 		return $array;
+	}
+
+	/**
+	 * Overwrite of the query() function
+	 */
+	public function query($sql) {
+		debug(compact('sql'));
+		throw new OutOfBoundsException("Should not have attempted AdobeConnectSource->query()");
 	}
 
 }
