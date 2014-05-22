@@ -230,11 +230,11 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 
 
 		// Don't verify next seminar session if event has already occurred.
-		// $d = new DateTime();
-		// $now = $d->format('c');
-		// if ($now > $date_begin) {
-		// 	return true;
-		// }
+		$d = new DateTime();
+		$now = $d->format('c');
+		if ($now > $date_begin) {
+			return true;
+		}
 
 		//Verify Next Seminar Session is the one we just worked with
 		$seminar_session = $this->getNextSeminarSession($seminar_sco_id);
