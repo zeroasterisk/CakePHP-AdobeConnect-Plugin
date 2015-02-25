@@ -246,16 +246,16 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 	}
 
 	public function getSeminarSessions($seminar_sco_id) {
-		//https://sample.com/api/xml?action=sco-session-seminar-list&sco-id=11903
-		return $this->request(array('action' => 'sco-session-seminar-list', 'sco-id' => $seminar_sco_id));
+		//https://sample.com/api/xml?action=sco-expanded-content&sco-id=11903
+		return $this->request(array('action' => 'sco-expanded-contents', 'sco-id' => $seminar_sco_id));
 	}
 
 	public function getSeminarSessionByName($seminar_sco_id, $session_name) {
 		$sessions = $this->getSeminarSessions($seminar_sco_id);
-		if (empty($sessions['session-seminar-list']['sco'])) {
+		if (empty($sessions['expanded-scos']['sco'])) {
 			return false;
 		} else {
-			foreach ($sessions['session-seminar-list']['sco'] as $session) {
+			foreach ($sessions['expanded-scos']['sco'] as $session) {
 				if (!empty($session['name']) && ($session['name'] == $session_name)) {
 					return $session['sco-id'];
 				}
@@ -271,10 +271,10 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 
 	public function purgeSeminarSessions($seminar_sco_id, $exclude_sco_id=false) {
 		$sessions = $this->getSeminarSessions($seminar_sco_id);
-		if (empty($sessions['session-seminar-list']['sco'])) {
+		if (empty($sessions['expanded-scos']['sco'])) {
 			return false;
 		} else {
-			foreach ($sessions['session-seminar-list']['sco'] as $session) {
+			foreach ($sessions['expanded-scos']['sco'] as $session) {
 				if (!empty($session['type']) && !empty($session['sco-id']) && $session['type'] == 'seminarsession' && $session['sco-id'] !== $exclude_sco_id) {
 					//Delete other sessions to keep them from blocking any time updates
 					$data = array('sco-id' => $session['sco-id']);
