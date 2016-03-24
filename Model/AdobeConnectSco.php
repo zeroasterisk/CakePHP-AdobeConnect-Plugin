@@ -309,7 +309,7 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 				return $license['quota'];
 			}
 		}
-		return 0;
+		return 100;
 	}
 
 	/**
