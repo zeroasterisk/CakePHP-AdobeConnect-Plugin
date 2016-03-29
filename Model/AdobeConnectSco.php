@@ -184,7 +184,9 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 			return true;
 		}
 		$quota = $this->getRoomQuota($seminar_sco_id);
-
+		if (empty($quota)) {
+			return false;
+		}
 		//Allowing for only one session name per seminar room.
 		$session_name = $seminar_sco_id."_session";
 
@@ -294,22 +296,49 @@ class AdobeConnectSco extends AdobeConnectAppModel {
 		$cacheKey = "AdobeConnect_quotas_$seminar_root_sco_id";
 		if (($seminar_licenses = Cache::read($cacheKey)) == false) {
 			$seminar_licenses = $this->request(array('action' => 'sco-seminar-licenses-list', 'sco-id' => $seminar_root_sco_id,));
+			$named_licenses = $this->request(array('action' => 'sco-seminar-licenses-list', 'sco-id' => $seminar_root_sco_id, 'user-webinar-selected' => 'true'));
+			if (!empty($named_licenses['user-webinar-licenses'])) {
+				$seminar_licenses['user-webinar-licenses'] = $named_licenses['user-webinar-licenses'];
+			}
 			Cache::write($cacheKey, $seminar_licenses);
 		}
-		foreach ($seminar_licenses['seminar-licenses']['sco'] as $license) {
-			if ($license['sco-id'] == $sco_info['AdobeConnectSco']['folder-id']) {
-				return $license['quota'];
+		if (!empty($seminar_licenses['seminar-licenses']['sco'])) {
+			foreach ($seminar_licenses['seminar-licenses']['sco'] as $license) {
+				if ($license['sco-id'] == $sco_info['AdobeConnectSco']['folder-id']) {
+					return $license['quota'];
+				}
 			}
 		}
+		if (!empty($seminar_licenses['user-webinar-licenses']['sco'])) {
+			foreach ($seminar_licenses['user-webinar-licenses']['sco'] as $license) {
+				if ($license['sco-id'] == $sco_info['AdobeConnectSco']['folder-id']) {
+					return $license['quota'];
+				}
+			}
+		}
+
 		//Not found in cached version.  Pull fresh
 		$seminar_licenses = $this->request(array('action' => 'sco-seminar-licenses-list', 'sco-id' => $seminar_root_sco_id,));
+		$named_licenses = $this->request(array('action' => 'sco-seminar-licenses-list', 'sco-id' => $seminar_root_sco_id, 'user-webinar-selected' => 'true'));
+		if (!empty($named_licenses['user-webinar-licenses'])) {
+			$seminar_licenses['user-webinar-licenses'] = $named_licenses['user-webinar-licenses'];
+		}
 		Cache::write($cacheKey, $seminar_licenses);
-		foreach ($seminar_licenses['seminar-licenses']['sco'] as $license) {
-			if ($license['sco-id'] == $sco_info['AdobeConnectSco']['folder-id']) {
-				return $license['quota'];
+		if (!empty($seminar_licenses['seminar-licenses']['sco'])) {
+			foreach ($seminar_licenses['seminar-licenses']['sco'] as $license) {
+				if ($license['sco-id'] == $sco_info['AdobeConnectSco']['folder-id']) {
+					return $license['quota'];
+				}
 			}
 		}
-		return 100;
+		if (!empty($seminar_licenses['user-webinar-licenses']['sco'])) {
+			foreach ($seminar_licenses['user-webinar-licenses']['sco'] as $license) {
+				if ($license['sco-id'] == $sco_info['AdobeConnectSco']['folder-id']) {
+					return $license['quota'];
+				}
+			}
+		}
+		return 0;
 	}
 
 	/**
